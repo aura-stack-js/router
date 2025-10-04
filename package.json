@@ -1,0 +1,52 @@
+{
+  "name": "@aura-stack/router",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "",
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./router": {
+      "types": "./dist/router.d.ts",
+      "import": "./dist/router.js",
+      "require": "./dist/router.cjs"
+    },
+    "./endpoint": {
+      "types": "./dist/endpoint.d.ts",
+      "import": "./dist/endpoint.js",
+      "require": "./dist/endpoint.cjs"
+    },
+    "./types": "./dist/types.d.ts"
+  },
+  "keywords": [
+    "auth",
+    "session",
+    "authentication"
+  ],
+  "author": "Aura Stack <auraauthoss@gmail.com> | Hernan Alvarado <hernanvid123@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "zod": "^4.1.11"
+  },
+  "packageManager": "pnpm@10.15.0"
+}
