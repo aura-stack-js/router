@@ -12,7 +12,7 @@ import type {
   InferMethod,
   EndpointSchemas,
 } from "../src/types.js";
-import { ZodObject, ZodString } from "zod";
+import type { ZodObject, ZodString } from "zod";
 
 /**
  * @todo: implement runtime tests for the types
@@ -209,13 +209,13 @@ describe("MiddlewareFunction", () => {
    */
   expectTypeOf<
     MiddlewareFunction<
-      { oauth: string },
+      GetRouteParams<"/auth/:oauth">,
       {
         middlewares: [
           (
             request: Request,
-            ctx: RequestContext<{ oauth: string }>,
-          ) => Promise<RequestContext<{ oauth: string }, { middlewares: [] }>>,
+            ctx: RequestContext<GetRouteParams<"/auth/:oauth">>,
+          ) => Promise<RequestContext>,
         ];
       }
     >
@@ -381,6 +381,22 @@ describe("EndpointConfig", () => {
       Record<string, string>,
       {
         schemas: EndpointSchemas;
+      }
+    >[];
+  }>();
+
+  expectTypeOf<
+    EndpointConfig<{
+      body: ZodObject<{ username: ZodString; password: ZodString }>;
+    }>
+  >().toEqualTypeOf<{
+    schemas?: { body: ZodObject<{ username: ZodString; password: ZodString }> };
+    middlewares?: MiddlewareFunction<
+      Record<string, string>,
+      {
+        schemas: {
+          body: ZodObject<{ username: ZodString; password: ZodString }>;
+        };
       }
     >[];
   }>();

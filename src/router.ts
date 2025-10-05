@@ -1,12 +1,12 @@
 import type {
   HTTPMethod,
-  InferMethod,
   RequestContext,
   RouteEndpoint,
   RoutePattern,
   RouterConfig,
   MiddlewareFunction,
   EndpointConfig,
+  GetHttpHandler,
 } from "./types.js";
 import { createRoutePattern } from "./endpoint.js";
 import {
@@ -54,18 +54,8 @@ export const executeMiddlewares = async <
 export const createRouter = <const Endpoints extends RouteEndpoint[]>(
   endpoints: Endpoints,
   config: RouterConfig = {},
-): {
-  [Method in InferMethod<Endpoints>]: (
-    req: Request,
-    ctx: RequestContext,
-  ) => Promise<Response>;
-} => {
-  const server = {} as {
-    [Method in InferMethod<Endpoints>]: (
-      req: Request,
-      ctx: RequestContext,
-    ) => Promise<Response>;
-  };
+): GetHttpHandler<Endpoints> => {
+  const server = {} as GetHttpHandler<Endpoints>;
   const groups: Record<HTTPMethod, RouteEndpoint[]> = {
     GET: [],
     POST: [],
