@@ -1,6 +1,7 @@
 # `@aura-stack/router`
 
-A lightweight, `TypeScript-first` router / endpoint library for modern NodeJs. Defines endpoints with full type safety (params, query, body), supports middleware chaining, and returns `Response` objects in the fetch-compatible style.
+A modern, **TypeScript-first** router and endpoint definition library for Node.js.  
+Build fully-typed APIs with declarative endpoints, automatic parameter inference, and first-class middleware support — all returning native `Response` objects for seamless compatibility with the Fetch API.
 
 ## Table of Contents
 
@@ -13,11 +14,11 @@ A lightweight, `TypeScript-first` router / endpoint library for modern NodeJs. D
 
 ## Features
 
-- `Type-safe routing`: only configured HTTP methods are exposed.
-- `Declarative`: `createEndpoint` & `createRouter` helpers with full TypeScript inference.
-- `Params`: parse path parameters (`/users/:id`) with correct types.
-- `Optional`: Zod validation for request bodies and search parameters.
-- `Middlewares`: global and per-route middlewares, with short-circuiting.
+- `Type-safe routing` — only configured HTTP methods are available at compile time.
+- `Declarative API` — define endpoints using `createEndpoint` and group them with `createRouter`.
+- `Typed params & queries` — automatic inference of path (`/users/:id`) and search parameters.
+- `Schema validation` — built-in support for `zod` to validate request bodies, queries, or params.
+- `Middleware chaining` — supports global and per-endpoint middleware execution, with short-circuit control.
 
 ## Installation
 
