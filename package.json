@@ -1,8 +1,8 @@
 {
   "name": "@aura-stack/router",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
-  "description": "",
+  "description": "A lightweight TypeScript library for building, managing, and validating API routes and endpoints in Node.js applications.",
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
@@ -35,9 +35,13 @@
     "./types": "./dist/types.d.ts"
   },
   "keywords": [
-    "auth",
-    "session",
-    "authentication"
+    "router",
+    "endpoints",
+    "api",
+    "aura",
+    "aura stack",
+    "typescript",
+    "nodejs"
   ],
   "author": "Aura Stack <auraauthoss@gmail.com> | Hernan Alvarado <hernanvid123@gmail.com>",
   "license": "MIT",

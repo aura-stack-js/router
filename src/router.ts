@@ -17,10 +17,12 @@ import {
 } from "./context.js";
 
 /**
+ * Executes middlewares in sequence, passing the request and context to each middleware.
  *
- * @param request -
- * @param context -
- * @param middlewares -
+ * @param request - Original request made from the client
+ * @param context - Context object of the endpoint functionality
+ * @param middlewares - Array of middleware functions to be executed
+ * @returns The modified context after all middlewares have been executed
  */
 export const executeMiddlewares = async <
   const RouteParams extends Record<string, string>,
@@ -41,10 +43,13 @@ export const executeMiddlewares = async <
 };
 
 /**
+ * Creates the entry point for the server, handling the endpoints defined in the router.
+ * It groups endpoints by HTTP method and matches incoming requests to the appropriate endpoint.
+ * It accepts an optional configuration object to set a base path and middlewares for all endpoints.
  *
- * @param endpoints -
- * @param config -
- * @returns
+ * @param endpoints - Array of route endpoints to be handled by the router
+ * @param config - Optional configuration object for the router
+ * @returns An object with methods corresponding to HTTP methods, each handling requests for that method
  */
 export const createRouter = <const Endpoints extends RouteEndpoint[]>(
   endpoints: Endpoints,
