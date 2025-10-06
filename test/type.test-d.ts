@@ -12,7 +12,7 @@ import type {
   InferMethod,
   EndpointSchemas,
 } from "../src/types.js";
-import { ZodObject, ZodString } from "zod";
+import type { ZodObject, ZodString } from "zod";
 
 /**
  * @todo: implement runtime tests for the types
@@ -208,22 +208,30 @@ describe("MiddlewareFunction", () => {
    * @todo: fix the error inference on nested middlewares
    */
   expectTypeOf<
-    MiddlewareFunction<
-      { oauth: string },
-      {
-        middlewares: [
-          (
-            request: Request,
-            ctx: RequestContext<{ oauth: string }>,
-          ) => Promise<RequestContext<{ oauth: string }, { middlewares: [] }>>,
-        ];
-      }
-    >
+    MiddlewareFunction<GetRouteParams<"/auth/:oauth">>
   >().toEqualTypeOf<
     (
       request: Request,
       ctx: RequestContext<{ oauth: string }, { middlewares: [] }>,
     ) => Promise<RequestContext<{ oauth: string }, { middlewares: [] }>>
+  >();
+
+  expectTypeOf<
+    MiddlewareFunction<
+      GetRouteParams<"/auth/:oauth">,
+      {
+        schemas: { searchParams: ZodObject<{ state: ZodString }> };
+        middlewares: [];
+      }
+    >
+  >().toEqualTypeOf<
+    (
+      request: Request,
+      ctx: RequestContext<
+        GetRouteParams<"/auth/:oauth">,
+        { schemas: { searchParams: ZodObject<{ state: ZodString }> } }
+      >,
+    ) => Promise<RequestContext<GetRouteParams<"/auth/:oauth">, {}>>
   >();
 });
 
@@ -378,9 +386,28 @@ describe("EndpointConfig", () => {
   expectTypeOf<EndpointConfig>().toEqualTypeOf<{
     schemas?: EndpointSchemas;
     middlewares?: MiddlewareFunction<
-      Record<string, string>,
+      GetRouteParams<"/">,
       {
         schemas: EndpointSchemas;
+      }
+    >[];
+  }>();
+
+  expectTypeOf<
+    EndpointConfig<
+      "/",
+      {
+        body: ZodObject<{ username: ZodString; password: ZodString }>;
+      }
+    >
+  >().toEqualTypeOf<{
+    schemas?: { body: ZodObject<{ username: ZodString; password: ZodString }> };
+    middlewares?: MiddlewareFunction<
+      GetRouteParams<"/">,
+      {
+        schemas: {
+          body: ZodObject<{ username: ZodString; password: ZodString }>;
+        };
       }
     >[];
   }>();

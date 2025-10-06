@@ -26,7 +26,7 @@ export type ContentType =
  */
 export interface RouterConfig {
   basePath?: RoutePattern;
-  middlewares?: MiddlewareFunction[];
+  middlewares?: GlobalMiddleware[];
 }
 
 export type Prettify<Obj extends object> = {
@@ -52,9 +52,9 @@ export type Params<Route extends RoutePattern> =
   Route extends `/${string}/:${infer Param}/${infer Str}`
     ? Prettify<{ [K in Param]: string } & Params<`/${Str}`>>
     : Route extends `/${string}/:${infer Param}`
-      ? { [K in Param]: string }
+      ? Prettify<{ [K in Param]: string }>
       : Route extends `/:${infer Param}`
-        ? { [K in Param]: string }
+        ? Prettify<{ [K in Param]: string }>
         : {};
 
 export type GetRouteParams<T extends RoutePattern> = Params<T>;
@@ -68,6 +68,13 @@ export interface EndpointSchemas {
 }
 
 /**
+ * Global middleware function type that represent a function that runs before the route matching.
+ */
+export type GlobalMiddleware = (
+  request: Request,
+) => Promise<Request | Response>;
+
+/**
  * Middleware function type that represent a function that runs before the route handler
  * defined in the `createEndpoint/createEndpointConfig` function or globally in the `createRouter` function.
  */
@@ -76,20 +83,22 @@ export type MiddlewareFunction<
   Config extends EndpointConfig = EndpointConfig,
 > = (
   request: Request,
-  ctx: RequestContext<RouteParams, Config>,
+  ctx: Prettify<RequestContext<RouteParams, Config>>,
 ) => Promise<RequestContext<RouteParams, Config>>;
 
 /**
  * Configuration for an endpoint, including optional schemas for request validation and middlewares.
  */
-export type EndpointConfig<Schemas extends EndpointSchemas = EndpointSchemas> =
-  {
-    schemas?: Schemas;
-    middlewares?: MiddlewareFunction<
-      Record<string, string>,
-      { schemas: Schemas }
-    >[];
-  };
+export type EndpointConfig<
+  RouteParams extends RoutePattern = RoutePattern,
+  Schemas extends EndpointSchemas = EndpointSchemas,
+> = Prettify<{
+  schemas?: Schemas;
+  middlewares?: MiddlewareFunction<
+    GetRouteParams<RouteParams>,
+    { schemas: Schemas }
+  >[];
+}>;
 
 /**
  * Infer the type of search parameters from the provided value in the `EndpointConfig`.
@@ -111,16 +120,15 @@ export type ContextBody<Schemas extends EndpointConfig["schemas"]> =
  * Context object passed to route handlers and middlewares defined in the
  * `createEndpoint/createEndpointConfig` function or globally in the `createRouter` function.
  */
-export type RequestContext<
+export interface RequestContext<
   RouteParams = Record<string, string>,
   Config extends EndpointConfig = EndpointConfig,
-> = Prettify<
-  {
-    params: RouteParams;
-    headers: Headers;
-  } & ContextBody<Config["schemas"]> &
-    ContextSearchParams<Config["schemas"]>
->;
+> {
+  params: RouteParams;
+  headers: Headers;
+  body: ContextBody<Config["schemas"]>["body"];
+  searchParams: ContextSearchParams<Config["schemas"]>["searchParams"];
+}
 
 /**
  * Defines a route handler function that processes an incoming request and returns a response.
@@ -132,27 +140,37 @@ export type RouteHandler<
   Config extends EndpointConfig,
 > = (
   request: Request,
-  ctx: RequestContext<GetRouteParams<Route>, Config>,
+  ctx: Prettify<RequestContext<GetRouteParams<Route>, Config>>,
 ) => Promise<Response>;
 
 /**
  * Represents a route endpoint definition, specifying the HTTP method, route pattern,
  * handler function with inferred context types, and associated configuration.
  */
-export type RouteEndpoint<
+export interface RouteEndpoint<
   Method extends HTTPMethod = HTTPMethod,
   Route extends RoutePattern = RoutePattern,
   Config extends EndpointConfig = EndpointConfig,
-> = {
+> {
   method: Method;
   route: Route;
   handler: RouteHandler<Route, Config>;
   config: Config;
-};
+}
 
 /**
  * Infer the HTTP methods defined in the provided array of route endpoints.
  */
-export type InferMethod<T extends RouteEndpoint[]> = T extends unknown[]
-  ? T[number]["method"]
-  : "unknown";
+export type InferMethod<Endpoints extends RouteEndpoint[]> =
+  Endpoints extends unknown[] ? Endpoints[number]["method"] : "unknown";
+
+/**
+ * Generates an object with HTTP methods available by the router from `createRouter` function.
+ * Each method is a function that takes a request and context, returning a promise of a response.
+ */
+export type GetHttpHandlers<Endpoints extends RouteEndpoint[]> = {
+  [Method in InferMethod<Endpoints>]: (
+    req: Request,
+    ctx: RequestContext,
+  ) => Promise<Response>;
+};

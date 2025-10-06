@@ -166,5 +166,9 @@ export const getBody = async <Config extends EndpointConfig>(
   ) {
     return await request.blob();
   }
-  throw new Error(`Unsupported Content-Type: ${contentType}`);
+  /**
+   * @todo: Handle other content types
+   * throw new Error(`Unsupported Content-Type: ${contentType}`);
+   */
+  return null;
 };

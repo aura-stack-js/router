@@ -43,13 +43,13 @@ export const createRoutePattern = (route: RoutePattern): RegExp => {
 export const createEndpoint = <
   const Method extends Uppercase<HTTPMethod>,
   const Route extends Lowercase<RoutePattern>,
-  const Config extends EndpointConfig,
+  const Schemas extends EndpointSchemas,
 >(
   method: Method,
   route: Route,
-  handler: RouteHandler<Route, Config>,
-  config: Config = {} as Config,
-): RouteEndpoint<Method, Route, Config> => {
+  handler: RouteHandler<Route, { schemas: Schemas }>,
+  config: EndpointConfig<Route, Schemas> = {},
+): RouteEndpoint<Method, Route, {}> => {
   if (!isSupportedMethod(method)) {
     throw new Error(`Unsupported HTTP method: ${method}`);
   }
@@ -83,8 +83,15 @@ export const createEndpoint = <
  *   return new Response("Search results");
  * }, config);
  */
-export const createEndpointConfig = <Schemas extends EndpointSchemas>(
-  config: EndpointConfig<Schemas>,
-) => {
-  return config;
-};
+export function createEndpointConfig<Schemas extends EndpointSchemas>(
+  config: EndpointConfig<RoutePattern, Schemas>,
+): EndpointConfig<RoutePattern, Schemas>;
+
+export function createEndpointConfig<
+  Route extends RoutePattern,
+  S extends EndpointSchemas,
+>(route: Route, config: EndpointConfig<Route, S>): EndpointConfig<Route, S>;
+export function createEndpointConfig(...args: unknown[]) {
+  if (typeof args[0] === "string") return args[1];
+  return args[0];
+}
