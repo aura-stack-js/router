@@ -1,11 +1,7 @@
 import z from "zod";
 import { describe, test } from "vitest";
 import { createRouter } from "../src/router.js";
-import {
-  createEndpoint,
-  createEndpointConfig,
-  createRoutePattern,
-} from "../src/endpoint.js";
+import { createEndpoint, createRoutePattern } from "../src/endpoint.js";
 import type { HTTPMethod, RoutePattern, RequestContext } from "../src/types.js";
 
 describe("createRoutePattern", () => {
@@ -286,44 +282,31 @@ describe("createEndpoint", () => {
   });
 
   describe("With schemas and middlewares", () => {
-    const config = createEndpointConfig({
-      schemas: {
-        body: z.object({
-          username: z.string(),
-          password: z.string(),
-        }),
-      },
-      middlewares: [
+    test("Override body in middleware", async ({ expect }) => {
+      const endpoint = createEndpoint(
+        "POST",
+        "/auth/credentials",
         async (_, ctx) => {
-          ctx.body;
-          return ctx;
+          return Response.json({ body: ctx.body });
         },
-      ],
-    });
-
-    const endpoint = createEndpoint(
-      "POST",
-      "/auth/credentials",
-      async (_, ctx) => {
-        return Response.json({ body: ctx.body });
-      },
-      {
-        schemas: {
-          body: z.object({
-            username: z.string(),
-            password: z.string(),
-          }),
-        },
-        middlewares: [
-          async (_, ctx) => {
-            return ctx;
+        {
+          schemas: {
+            body: z.object({
+              username: z.string(),
+              password: z.string(),
+            }),
           },
-        ],
-      },
-    );
-    const { POST } = createRouter([endpoint]);
+          middlewares: [
+            async (_, ctx) => {
+              const body = ctx.body as any;
+              body.userId = 12;
+              return ctx;
+            },
+          ],
+        },
+      );
+      const { POST } = createRouter([endpoint]);
 
-    test("With valid body", async ({ expect }) => {
       const post = await POST(
         new Request("https://example.com/auth/credentials", {
           method: "POST",
@@ -334,7 +317,77 @@ describe("createEndpoint", () => {
       );
       expect(post.ok).toBe(true);
       expect(await post.json()).toEqual({
-        body: { username: "John", password: "secret" },
+        body: { username: "John", password: "secret", userId: 12 },
+      });
+    });
+
+    test("Override searchParams in middleware", async ({ expect }) => {
+      const endpoint = createEndpoint(
+        "GET",
+        "/auth/google",
+        async (_, ctx) => {
+          return Response.json({ searchParams: ctx.searchParams });
+        },
+        {
+          schemas: {
+            searchParams: z.object({
+              redirect_uri: z.string(),
+            }),
+          },
+          middlewares: [
+            async (_, ctx) => {
+              const searchParams = ctx.searchParams as any;
+              searchParams.state = "123abc";
+              searchParams.code = "123";
+              return ctx;
+            },
+          ],
+        },
+      );
+      const { GET } = createRouter([endpoint]);
+      const get = await GET(
+        new Request(
+          "https://example.com/auth/google?redirect_uri=https://app.com/callback",
+        ),
+        {} as RequestContext,
+      );
+      expect(get.ok).toBe(true);
+      expect(await get.json()).toEqual({
+        searchParams: {
+          state: "123abc",
+          code: "123",
+          redirect_uri: "https://app.com/callback",
+        },
+      });
+    });
+
+    test("Override params in middleware", async ({ expect }) => {
+      const endpoint = createEndpoint(
+        "GET",
+        "/auth/:oauth",
+        async (_, ctx) => {
+          return Response.json({ params: ctx.params });
+        },
+        {
+          schemas: {},
+          middlewares: [
+            async (_, ctx) => {
+              const params = ctx.params as any;
+              params.oauth = "google";
+              return ctx;
+            },
+          ],
+        },
+      );
+
+      const { GET } = createRouter([endpoint]);
+      const get = await GET(
+        new Request("https://example.com/auth/github"),
+        {} as RequestContext,
+      );
+      expect(get.ok).toBe(true);
+      expect(await get.json()).toEqual({
+        params: { oauth: "google" },
       });
     });
   });

@@ -4,9 +4,7 @@ import type {
   RouteEndpoint,
   RoutePattern,
   RouterConfig,
-  MiddlewareFunction,
-  EndpointConfig,
-  GetHttpHandler,
+  GetHttpHandlers,
 } from "./types.js";
 import { createRoutePattern } from "./endpoint.js";
 import {
@@ -15,32 +13,7 @@ import {
   getRouteParams,
   getSearchParams,
 } from "./context.js";
-
-/**
- * Executes middlewares in sequence, passing the request and context to each middleware.
- *
- * @param request - Original request made from the client
- * @param context - Context object of the endpoint functionality
- * @param middlewares - Array of middleware functions to be executed
- * @returns The modified context after all middlewares have been executed
- */
-export const executeMiddlewares = async <
-  const RouteParams extends Record<string, string>,
-  const Config extends EndpointConfig,
->(
-  request: Request,
-  context: RequestContext<RouteParams, Config>,
-  middlewares: MiddlewareFunction<RouteParams, Config>[] = [],
-): Promise<RequestContext<RouteParams, Config>> => {
-  let ctx = context;
-  for (const middleware of middlewares) {
-    if (typeof middleware !== "function") {
-      throw new TypeError("Middleware must be a function");
-    }
-    ctx = await middleware(request, ctx);
-  }
-  return ctx;
-};
+import { executeGlobalMiddlewares, executeMiddlewares } from "./middleware.js";
 
 /**
  * Creates the entry point for the server, handling the endpoints defined in the router.
@@ -54,8 +27,8 @@ export const executeMiddlewares = async <
 export const createRouter = <const Endpoints extends RouteEndpoint[]>(
   endpoints: Endpoints,
   config: RouterConfig = {},
-): GetHttpHandler<Endpoints> => {
-  const server = {} as GetHttpHandler<Endpoints>;
+): GetHttpHandlers<Endpoints> => {
+  const server = {} as GetHttpHandlers<Endpoints>;
   const groups: Record<HTTPMethod, RouteEndpoint[]> = {
     GET: [],
     POST: [],
@@ -69,7 +42,14 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
       request: Request,
       ctx: RequestContext,
     ) => {
-      const url = new URL(request.url);
+      const globalRequest = await executeGlobalMiddlewares(
+        request,
+        config.middlewares,
+      );
+      if (globalRequest instanceof Response) {
+        return globalRequest;
+      }
+      const url = new URL(globalRequest.url);
       const pathname = url.pathname;
       const endpoint = groups[method as HTTPMethod].find((endpoint) => {
         const withBasePath = config.basePath
@@ -82,10 +62,13 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
         const withBasePath = config.basePath
           ? `${config.basePath}${endpoint.route}`
           : endpoint.route;
-        const body = await getBody(request, endpoint.config);
+        const body = await getBody(globalRequest, endpoint.config);
         const params = getRouteParams(withBasePath as RoutePattern, pathname);
-        const searchParams = getSearchParams(request.url, endpoint.config);
-        const headers = getHeaders(request);
+        const searchParams = getSearchParams(
+          globalRequest.url,
+          endpoint.config,
+        );
+        const headers = getHeaders(globalRequest);
         const context = {
           ...ctx,
           params,
@@ -93,9 +76,12 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
           headers,
           body,
         } as RequestContext<Record<string, string>, typeof endpoint.config>;
-        await executeMiddlewares(request, context, config.middlewares);
-        await executeMiddlewares(request, context, endpoint.config.middlewares);
-        return endpoint.handler(request, context);
+        await executeMiddlewares(
+          globalRequest,
+          context,
+          endpoint.config.middlewares,
+        );
+        return endpoint.handler(globalRequest, context);
       }
       return Response.json({ message: "Not Found" }, { status: 404 });
     };

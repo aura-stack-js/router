@@ -35,7 +35,7 @@ yarn add @aura-stack/router
 ```ts
 import { createEndpoint, createRouter } from "@aura-stack/router";
 
-const session = createEndpoint("GET", "/auth/session", async (_req, ctx) => {
+const session = createEndpoint("GET", "/auth/session", async (_, ctx) => {
   return Response.json(
     {
       session: {
@@ -82,10 +82,12 @@ export const signIn = createEndpoint(
 **Validation.** Provide Zod schemas in `createEndpointConfig`:
 
 ```ts
+import { createEndpoint, createEndpointConfig } from "@aura-stack/router";
+
 const config = createEndpointConfig({
   schemas: {
     searchParams: z.object({
-      redirect_uri: z.string().url(),
+      redirect_uri: z.string(),
     }),
   },
 });
@@ -104,12 +106,14 @@ const oauth = createEndpoint(
 
 If validation fails, the helper throws an informative error before your handler executes.
 
-**Middlewares.** Supply async middleware functions that can read/augment the context:
+**Middlewares.** Provide async middleware functions to read or modify the request.
 
 ```ts
-const audit: MiddlewareFunction = async (request, ctx) => {
-  ctx.headers.set("x-request-id", crypto.randomUUID());
-  return ctx;
+import { createRouter, type GlobalMiddleware } from "@aura-stack/router";
+
+const audit: GlobalMiddleware = async (request) => {
+  request.headers.set("x-request-id", crypto.randomUUID());
+  return request;
 };
 
 const router = createRouter([oauth], { middlewares: [audit] });

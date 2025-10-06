@@ -7,7 +7,6 @@ import type {
   RoutePattern,
 } from "./types.js";
 import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js";
-import z from "zod";
 
 /**
  * Create a RegExp pattern from a route string. This function allows segment the
@@ -84,11 +83,15 @@ export const createEndpoint = <
  *   return new Response("Search results");
  * }, config);
  */
-export const createEndpointConfig = <
+export function createEndpointConfig<Schemas extends EndpointSchemas>(
+  config: EndpointConfig<RoutePattern, Schemas>,
+): EndpointConfig<RoutePattern, Schemas>;
+
+export function createEndpointConfig<
   Route extends RoutePattern,
-  Schemas extends EndpointSchemas = EndpointSchemas,
->(
-  config: EndpointConfig<Route, Schemas>,
-) => {
-  return config;
-};
+  S extends EndpointSchemas,
+>(route: Route, config: EndpointConfig<Route, S>): EndpointConfig<Route, S>;
+export function createEndpointConfig(...args: unknown[]) {
+  if (typeof args[0] === "string") return args[1];
+  return args[0];
+}

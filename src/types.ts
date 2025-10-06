@@ -26,7 +26,7 @@ export type ContentType =
  */
 export interface RouterConfig {
   basePath?: RoutePattern;
-  middlewares?: MiddlewareFunction[];
+  middlewares?: GlobalMiddleware[];
 }
 
 export type Prettify<Obj extends object> = {
@@ -52,9 +52,9 @@ export type Params<Route extends RoutePattern> =
   Route extends `/${string}/:${infer Param}/${infer Str}`
     ? Prettify<{ [K in Param]: string } & Params<`/${Str}`>>
     : Route extends `/${string}/:${infer Param}`
-      ? { [K in Param]: string }
+      ? Prettify<{ [K in Param]: string }>
       : Route extends `/:${infer Param}`
-        ? { [K in Param]: string }
+        ? Prettify<{ [K in Param]: string }>
         : {};
 
 export type GetRouteParams<T extends RoutePattern> = Params<T>;
@@ -66,6 +66,13 @@ export interface EndpointSchemas {
   body?: ZodObject<any>;
   searchParams?: ZodObject<any>;
 }
+
+/**
+ * Global middleware function type that represent a function that runs before the route matching.
+ */
+export type GlobalMiddleware = (
+  request: Request,
+) => Promise<Request | Response>;
 
 /**
  * Middleware function type that represent a function that runs before the route handler
@@ -157,7 +164,11 @@ export interface RouteEndpoint<
 export type InferMethod<Endpoints extends RouteEndpoint[]> =
   Endpoints extends unknown[] ? Endpoints[number]["method"] : "unknown";
 
-export type GetHttpHandler<Endpoints extends RouteEndpoint[]> = {
+/**
+ * Generates an object with HTTP methods available by the router from `createRouter` function.
+ * Each method is a function that takes a request and context, returning a promise of a response.
+ */
+export type GetHttpHandlers<Endpoints extends RouteEndpoint[]> = {
   [Method in InferMethod<Endpoints>]: (
     req: Request,
     ctx: RequestContext,

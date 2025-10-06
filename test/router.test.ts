@@ -1,134 +1,12 @@
 import z from "zod";
 import { describe, expect, test } from "vitest";
-import { createRouter, executeMiddlewares } from "../src/router.js";
+import { createRouter } from "../src/router.js";
 import { createEndpoint, createEndpointConfig } from "../src/endpoint.js";
-import type {
-  EndpointConfig,
-  MiddlewareFunction,
-  RequestContext,
-} from "../src/types.js";
-
-describe("executeMiddlewares", () => {
-  test.concurrent(
-    "Middleware with searchParams and headers context",
-    async ({ expect }) => {
-      const middlewares: MiddlewareFunction[] = [
-        async (_, ctx) => {
-          ctx.searchParams.set("code", "123abc");
-          ctx.headers.set("Content-Type", "application/json");
-          return ctx;
-        },
-      ];
-      const ctx = await executeMiddlewares(
-        new Request("https://example.com"),
-        {
-          searchParams: new URL("https://example.com").searchParams,
-          headers: new Headers(),
-        } as RequestContext,
-        middlewares,
-      );
-      expect(ctx.searchParams.get("code")).toBe("123abc");
-      expect(ctx.headers.get("Content-Type")).toBe("application/json");
-    },
-  );
-
-  test.concurrent(
-    "Two middlewares with searchParams and headers context",
-    async ({ expect }) => {
-      const middlewares: MiddlewareFunction[] = [
-        async (_, ctx) => {
-          ctx.searchParams.set("code", "123abc");
-          ctx.searchParams.set("state", "xyz");
-          return ctx;
-        },
-        async (_, ctx) => {
-          ctx.searchParams.set("state", "abc");
-          ctx.headers.set("Authorization", "Bearer token");
-          return ctx;
-        },
-      ];
-      const ctx = await executeMiddlewares(
-        new Request("https://example.com"),
-        {
-          searchParams: new URL("https://example.com").searchParams,
-          headers: new Headers(),
-        } as RequestContext,
-        middlewares,
-      );
-      expect(ctx.searchParams.get("code")).toBe("123abc");
-      expect(ctx.searchParams.get("state")).toBe("abc");
-      expect(ctx.headers.get("Authorization")).toBe("Bearer token");
-    },
-  );
-
-  test.concurrent("Invalid middleware", async ({ expect }) => {
-    const middlewares: MiddlewareFunction[] = [undefined as any];
-    await expect(
-      executeMiddlewares(
-        new Request("https://example.com"),
-        {
-          searchParams: new URL("https://example.com").searchParams,
-          headers: new Headers(),
-        } as RequestContext,
-        middlewares,
-      ),
-    ).rejects.toThrowError(/Middleware must be a function/);
-  });
-
-  test.concurrent("No middleware", async ({ expect }) => {
-    const ctx = await executeMiddlewares(new Request("https://example.com"), {
-      searchParams: new URL("https://example.com").searchParams,
-      headers: new Headers(),
-    } as RequestContext);
-    expect(ctx.searchParams.get("code")).toBe(null);
-    expect(ctx.searchParams.get("state")).toBe(null);
-    expect(ctx.headers.get("Content-Type")).toBe(null);
-  });
-
-  test.concurrent("Middleware with schema", async ({ expect }) => {
-    const searchParamsShema = z.object({
-      code: z.string().optional,
-      state: z.string().optional(),
-    });
-    const middlewares: MiddlewareFunction<
-      Record<string, string>,
-      { schemas: { searchParams: typeof searchParamsShema } }
-    >[] = [
-      async (_, ctx) => {
-        ctx.searchParams.code = "123abc";
-        ctx.searchParams.state = "xyz";
-        return ctx;
-      },
-    ];
-    const ctx = await executeMiddlewares<
-      Record<string, string>,
-      EndpointConfig<{ searchParams: typeof searchParamsShema }>
-    >(
-      new Request("https://example.com"),
-      {
-        headers: new Headers(),
-        searchParams: {
-          code: "123abc",
-          state: "xyz",
-        },
-      } as RequestContext<
-        Record<string, string>,
-        EndpointConfig<{ searchParams: typeof searchParamsShema }>
-      >,
-      middlewares,
-    );
-    /**
-     * @todo: fix type inference for searchParams
-     */
-    const searchParams = ctx.searchParams as any;
-    expect(searchParams.code).toBe("123abc");
-    expect(searchParams.state).toBe("xyz");
-  });
-});
+import type { RequestContext } from "../src/types.js";
 
 describe("createRouter", () => {
   describe("OAuth endpoints", () => {
-    const signInConfig = createEndpointConfig({
+    const signInConfig = createEndpointConfig("/auth/signin/:oauth", {
       schemas: {
         searchParams: z.object({
           redirect_uri: z.string(),
@@ -379,6 +257,82 @@ describe("createRouter", () => {
       expect(get.status).toBe(404);
       expect(get.ok).toBeFalsy();
       expect(await get.json()).toEqual({ message: "Not Found" });
+    });
+  });
+
+  describe("With global middlewares", () => {
+    const session = createEndpoint("GET", "/session", async (_, ctx) => {
+      return Response.json(
+        { message: "Get user session" },
+        { status: 200, headers: ctx.headers },
+      );
+    });
+
+    const signIn = createEndpoint("POST", "/auth/:oauth", async (_, ctx) => {
+      return Response.json(
+        { message: "Sign in with OAuth" },
+        { status: 200, headers: ctx.headers },
+      );
+    });
+
+    describe("Add headers middleware", async () => {
+      const router = createRouter([session, signIn], {
+        middlewares: [
+          async (request) => {
+            request.headers.set("x-powered-by", "@aura-stack");
+            return request;
+          },
+        ],
+      });
+      const { GET, POST } = router;
+
+      test("Add header in GET request", async () => {
+        const get = await GET(
+          new Request("https://example.com/session", { method: "GET" }),
+          {} as RequestContext,
+        );
+        expect(get.status).toBe(200);
+        expect(get.ok).toBeTruthy();
+        expect(get.headers.get("x-powered-by")).toBe("@aura-stack");
+        expect(await get.json()).toEqual({ message: "Get user session" });
+      });
+
+      test("Add header in POST request", async () => {
+        const post = await POST(
+          new Request("https://example.com/auth/google", { method: "POST" }),
+          {} as RequestContext,
+        );
+        expect(post.status).toBe(200);
+        expect(post.ok).toBeTruthy();
+        expect(post.headers.get("x-powered-by")).toBe("@aura-stack");
+        expect(await post.json()).toEqual({ message: "Sign in with OAuth" });
+      });
+    });
+
+    describe("Block request middleware", async () => {
+      const router = createRouter([session], {
+        middlewares: [
+          async (request) => {
+            if (!request.headers.get("authorization")) {
+              return new Response(JSON.stringify({ message: "Forbidden" }), {
+                status: 403,
+              });
+            }
+            return request;
+          },
+        ],
+      });
+      const { GET } = router;
+
+      test("Block request without authorization header", async () => {
+        const get = await GET(
+          new Request("https://example.com/session", { method: "GET" }),
+          {} as RequestContext,
+        );
+        expect(get).toBeInstanceOf(Response);
+        expect(get.status).toBe(403);
+        expect(await get.json()).toEqual({ message: "Forbidden" });
+      });
     });
   });
 });

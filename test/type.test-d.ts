@@ -208,22 +208,30 @@ describe("MiddlewareFunction", () => {
    * @todo: fix the error inference on nested middlewares
    */
   expectTypeOf<
-    MiddlewareFunction<
-      GetRouteParams<"/auth/:oauth">,
-      {
-        middlewares: [
-          (
-            request: Request,
-            ctx: RequestContext<GetRouteParams<"/auth/:oauth">>,
-          ) => Promise<RequestContext>,
-        ];
-      }
-    >
+    MiddlewareFunction<GetRouteParams<"/auth/:oauth">>
   >().toEqualTypeOf<
     (
       request: Request,
       ctx: RequestContext<{ oauth: string }, { middlewares: [] }>,
     ) => Promise<RequestContext<{ oauth: string }, { middlewares: [] }>>
+  >();
+
+  expectTypeOf<
+    MiddlewareFunction<
+      GetRouteParams<"/auth/:oauth">,
+      {
+        schemas: { searchParams: ZodObject<{ state: ZodString }> };
+        middlewares: [];
+      }
+    >
+  >().toEqualTypeOf<
+    (
+      request: Request,
+      ctx: RequestContext<
+        GetRouteParams<"/auth/:oauth">,
+        { schemas: { searchParams: ZodObject<{ state: ZodString }> } }
+      >,
+    ) => Promise<RequestContext<GetRouteParams<"/auth/:oauth">, {}>>
   >();
 });
 
@@ -378,7 +386,7 @@ describe("EndpointConfig", () => {
   expectTypeOf<EndpointConfig>().toEqualTypeOf<{
     schemas?: EndpointSchemas;
     middlewares?: MiddlewareFunction<
-      Record<string, string>,
+      GetRouteParams<"/">,
       {
         schemas: EndpointSchemas;
       }
@@ -386,13 +394,16 @@ describe("EndpointConfig", () => {
   }>();
 
   expectTypeOf<
-    EndpointConfig<{
-      body: ZodObject<{ username: ZodString; password: ZodString }>;
-    }>
+    EndpointConfig<
+      "/",
+      {
+        body: ZodObject<{ username: ZodString; password: ZodString }>;
+      }
+    >
   >().toEqualTypeOf<{
     schemas?: { body: ZodObject<{ username: ZodString; password: ZodString }> };
     middlewares?: MiddlewareFunction<
-      Record<string, string>,
+      GetRouteParams<"/">,
       {
         schemas: {
           body: ZodObject<{ username: ZodString; password: ZodString }>;
