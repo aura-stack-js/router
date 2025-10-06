@@ -1,12 +1,5 @@
-import type {
-  EndpointConfig,
-  EndpointSchemas,
-  HTTPMethod,
-  RouteEndpoint,
-  RouteHandler,
-  RoutePattern,
-} from "./types.js";
-import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js";
+import type { EndpointConfig, EndpointSchemas, HTTPMethod, RouteEndpoint, RouteHandler, RoutePattern } from "./types.js"
+import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js"
 
 /**
  * Create a RegExp pattern from a route string. This function allows segment the
@@ -20,9 +13,9 @@ import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js";
  * const pattern = createRoutePattern("/users/:id");
  */
 export const createRoutePattern = (route: RoutePattern): RegExp => {
-  const pattern = route.replace(/:[^/]+/g, "([^/]+)").replace(/\//g, "\\/");
-  return new RegExp(`^${pattern}$`);
-};
+    const pattern = route.replace(/:[^/]+/g, "([^/]+)").replace(/\//g, "\\/")
+    return new RegExp(`^${pattern}$`)
+}
 
 /**
  * Defines an API endpoint for the router by specifying the HTTP method, route pattern,
@@ -41,26 +34,26 @@ export const createRoutePattern = (route: RoutePattern): RegExp => {
  * });
  */
 export const createEndpoint = <
-  const Method extends Uppercase<HTTPMethod>,
-  const Route extends Lowercase<RoutePattern>,
-  const Schemas extends EndpointSchemas,
+    const Method extends Uppercase<HTTPMethod>,
+    const Route extends Lowercase<RoutePattern>,
+    const Schemas extends EndpointSchemas,
 >(
-  method: Method,
-  route: Route,
-  handler: RouteHandler<Route, { schemas: Schemas }>,
-  config: EndpointConfig<Route, Schemas> = {},
+    method: Method,
+    route: Route,
+    handler: RouteHandler<Route, { schemas: Schemas }>,
+    config: EndpointConfig<Route, Schemas> = {}
 ): RouteEndpoint<Method, Route, {}> => {
-  if (!isSupportedMethod(method)) {
-    throw new Error(`Unsupported HTTP method: ${method}`);
-  }
-  if (!isValidRoute(route)) {
-    throw new Error(`Invalid route format: ${route}`);
-  }
-  if (!isValidHandler(handler)) {
-    throw new Error("Handler must be a function");
-  }
-  return { method, route, handler, config };
-};
+    if (!isSupportedMethod(method)) {
+        throw new Error(`Unsupported HTTP method: ${method}`)
+    }
+    if (!isValidRoute(route)) {
+        throw new Error(`Invalid route format: ${route}`)
+    }
+    if (!isValidHandler(handler)) {
+        throw new Error("Handler must be a function")
+    }
+    return { method, route, handler, config }
+}
 
 /**
  * Create an endpoint configuration to be passed to the `createEndpoint` function.
@@ -84,14 +77,14 @@ export const createEndpoint = <
  * }, config);
  */
 export function createEndpointConfig<Schemas extends EndpointSchemas>(
-  config: EndpointConfig<RoutePattern, Schemas>,
-): EndpointConfig<RoutePattern, Schemas>;
+    config: EndpointConfig<RoutePattern, Schemas>
+): EndpointConfig<RoutePattern, Schemas>
 
-export function createEndpointConfig<
-  Route extends RoutePattern,
-  S extends EndpointSchemas,
->(route: Route, config: EndpointConfig<Route, S>): EndpointConfig<Route, S>;
+export function createEndpointConfig<Route extends RoutePattern, S extends EndpointSchemas>(
+    route: Route,
+    config: EndpointConfig<Route, S>
+): EndpointConfig<Route, S>
 export function createEndpointConfig(...args: unknown[]) {
-  if (typeof args[0] === "string") return args[1];
-  return args[0];
+    if (typeof args[0] === "string") return args[1]
+    return args[0]
 }

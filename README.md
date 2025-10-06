@@ -33,7 +33,7 @@ yarn add @aura-stack/router
 ## Quick Start
 
 ```ts
-import { createEndpoint, createRouter } from "@aura-stack/router";
+import { createEndpoint, createRouter } from "@aura-stack/router"
 
 const session = createEndpoint("GET", "/auth/session", async (_, ctx) => {
   return Response.json(
@@ -43,18 +43,18 @@ const session = createEndpoint("GET", "/auth/session", async (_, ctx) => {
         username: "John",
       },
     },
-    { headers: ctx.headers },
-  );
-});
+    { headers: ctx.headers }
+  )
+})
 
-const { GET } = createRouter([session]);
+const { GET } = createRouter([session])
 ```
 
 ## Defining Endpoints
 
 ```ts
-import { z } from "zod";
-import { createEndpoint, createEndpointConfig } from "@aura-stack/router";
+import { z } from "zod"
+import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
 
 const credentialsConfig = createEndpointConfig({
   schemas: {
@@ -63,18 +63,18 @@ const credentialsConfig = createEndpointConfig({
       password: z.string(),
     }),
   },
-});
+})
 
 export const signIn = createEndpoint(
   "POST",
   "/auth/credentials",
   async (request, ctx) => {
-    const { body, headers } = ctx;
-    headers.set("x-login", "success");
-    return Response.json({ status: "ok", body }, { headers });
+    const { body, headers } = ctx
+    headers.set("x-login", "success")
+    return Response.json({ status: "ok", body }, { headers })
   },
-  credentialsConfig,
-);
+  credentialsConfig
+)
 ```
 
 ## Validation & Middlewares
@@ -82,7 +82,7 @@ export const signIn = createEndpoint(
 **Validation.** Provide Zod schemas in `createEndpointConfig`:
 
 ```ts
-import { createEndpoint, createEndpointConfig } from "@aura-stack/router";
+import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
 
 const config = createEndpointConfig({
   schemas: {
@@ -90,18 +90,18 @@ const config = createEndpointConfig({
       redirect_uri: z.string(),
     }),
   },
-});
+})
 
 const oauth = createEndpoint(
   "GET",
   "/auth/signin/:provider",
   async (_req, ctx) => {
-    const { provider } = ctx.params;
-    const { redirect_uri } = ctx.searchParams;
-    return Response.json({ provider, redirect_uri }, { status: 302 });
+    const { provider } = ctx.params
+    const { redirect_uri } = ctx.searchParams
+    return Response.json({ provider, redirect_uri }, { status: 302 })
   },
-  config,
-);
+  config
+)
 ```
 
 If validation fails, the helper throws an informative error before your handler executes.
@@ -109,14 +109,14 @@ If validation fails, the helper throws an informative error before your handler 
 **Middlewares.** Provide async middleware functions to read or modify the request.
 
 ```ts
-import { createRouter, type GlobalMiddleware } from "@aura-stack/router";
+import { createRouter, type GlobalMiddleware } from "@aura-stack/router"
 
 const audit: GlobalMiddleware = async (request) => {
-  request.headers.set("x-request-id", crypto.randomUUID());
-  return request;
-};
+  request.headers.set("x-request-id", crypto.randomUUID())
+  return request
+}
 
-const router = createRouter([oauth], { middlewares: [audit] });
+const router = createRouter([oauth], { middlewares: [audit] })
 ```
 
 ## API Reference
