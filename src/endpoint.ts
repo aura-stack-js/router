@@ -1,5 +1,6 @@
 import type { EndpointConfig, EndpointSchemas, HTTPMethod, RouteEndpoint, RouteHandler, RoutePattern } from "./types.js"
 import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js"
+import { InvalidHandlerError, MismatchRouteError, UnsupportedHTTPMethodError } from "./error.js"
 
 /**
  * Create a RegExp pattern from a route string. This function allows segment the
@@ -44,13 +45,13 @@ export const createEndpoint = <
     config: EndpointConfig<Route, Schemas> = {}
 ): RouteEndpoint<Method, Route, {}> => {
     if (!isSupportedMethod(method)) {
-        throw new Error(`Unsupported HTTP method: ${method}`)
+        throw new UnsupportedHTTPMethodError(`Unsupported HTTP method: ${method}`)
     }
     if (!isValidRoute(route)) {
-        throw new Error(`Invalid route format: ${route}`)
+        throw new MismatchRouteError(`Invalid route format: ${route}`)
     }
     if (!isValidHandler(handler)) {
-        throw new Error("Handler must be a function")
+        throw new InvalidHandlerError("Handler must be a function")
     }
     return { method, route, handler, config }
 }

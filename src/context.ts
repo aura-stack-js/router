@@ -1,6 +1,7 @@
 import type { EndpointConfig, Params, RoutePattern, ContextSearchParams, ContentType } from "./types.js"
 import { createRoutePattern } from "./endpoint.js"
 import { isSupportedBodyMethod } from "./assert.js"
+import { InvalidRequestBodyError, InvalidSearchParamsError, MismatchRouteError } from "./error.js"
 
 /**
  * Extracts route parameters from a given path using the specified route pattern.
@@ -23,7 +24,7 @@ import { isSupportedBodyMethod } from "./assert.js"
 export const getRouteParams = <Route extends RoutePattern>(route: Route, path: string): Params<Route> => {
     const routeRegex = createRoutePattern(route)
     if (!routeRegex.test(path)) {
-        return {} as Params<Route>
+        throw new MismatchRouteError(`The path "${path}" does not match the route pattern "${route}".`)
     }
     const params = routeRegex
         .exec(route)
@@ -79,7 +80,7 @@ export const getSearchParams = <Config extends EndpointConfig>(
     if (config.schemas?.searchParams) {
         const parsed = config.schemas.searchParams.safeParse(Object.fromEntries(route.searchParams.entries()))
         if (!parsed.success) {
-            throw new Error(`Invalid search parameters: ${parsed.error.message}`)
+            throw new InvalidSearchParamsError("Invalid search parameters")
         }
         return parsed.data
     }
@@ -126,7 +127,7 @@ export const getBody = async <Config extends EndpointConfig>(request: Request, c
         if (config.schemas?.body) {
             const parsed = config.schemas.body.safeParse(json)
             if (!parsed.success) {
-                throw new Error("Invalid request body")
+                throw new InvalidRequestBodyError("Invalid request body")
             }
             return parsed.data
         }
