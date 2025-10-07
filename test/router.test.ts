@@ -1,338 +1,296 @@
-import z from "zod";
-import { describe, expect, test } from "vitest";
-import { createRouter } from "../src/router.js";
-import { createEndpoint, createEndpointConfig } from "../src/endpoint.js";
-import type { RequestContext } from "../src/types.js";
+import z from "zod"
+import { describe, expect, test } from "vitest"
+import { createRouter } from "../src/router.js"
+import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
+import type { RequestContext } from "../src/types.js"
 
 describe("createRouter", () => {
-  describe("OAuth endpoints", () => {
-    const signInConfig = createEndpointConfig("/auth/signin/:oauth", {
-      schemas: {
-        searchParams: z.object({
-          redirect_uri: z.string(),
-        }),
-      },
-    });
-    const sessionConfig = createEndpointConfig({
-      middlewares: [
-        async (_, ctx) => {
-          ctx.headers.set("session-token", "123abc-token");
-          return ctx;
-        },
-      ],
-    });
-
-    const signIn = createEndpoint(
-      "GET",
-      "/auth/signin/:oauth",
-      async () => {
-        return Response.json(
-          { message: "Redirect to OAuth provider" },
-          { status: 302 },
-        );
-      },
-      signInConfig,
-    );
-
-    const callback = createEndpoint("GET", "/auth/callback", async () => {
-      return Response.json(
-        { message: "Handle OAuth callback" },
-        { status: 200 },
-      );
-    });
-
-    const session = createEndpoint(
-      "GET",
-      "/auth/session",
-      async (_, ctx) => {
-        const headers = ctx.headers;
-        return Response.json(
-          { message: "Get user session" },
-          { status: 200, headers },
-        );
-      },
-      sessionConfig,
-    );
-
-    const credentialsConfig = createEndpointConfig({
-      schemas: {
-        body: z.object({
-          username: z.string(),
-          password: z.string(),
-        }),
-      },
-    });
-
-    const credentials = createEndpoint(
-      "POST",
-      "/auth/credentials",
-      async (_, ctx) => {
-        const body = ctx.body;
-        return Response.json(
-          { message: "Sign in with credentials", credentials: body },
-          { status: 200 },
-        );
-      },
-      credentialsConfig,
-    );
-
-    const router = createRouter([signIn, callback, session, credentials]);
-
-    test("Callback handler", async () => {
-      const { GET } = router;
-      const get = await GET(
-        new Request("https://example.com/auth/callback", { method: "GET" }),
-        {} as RequestContext,
-      );
-      expect(get.status).toBe(200);
-      expect(get.ok).toBeTruthy();
-      expect(await get.json()).toEqual({ message: "Handle OAuth callback" });
-    });
-
-    test("Sign-in handler", async () => {
-      const { GET } = router;
-      const get = await GET(
-        new Request(
-          "https://example.com/auth/signin/google?redirect_uri=url_to_redirect",
-          { method: "GET" },
-        ),
-        {} as RequestContext,
-      );
-      expect(get.status).toBe(302);
-      expect(await get.json()).toEqual({
-        message: "Redirect to OAuth provider",
-      });
-    });
-
-    test("Sign-in handler with missing search params", async () => {
-      const { GET } = router;
-      await expect(
-        GET(
-          new Request("https://example.com/auth/signin/google", {
-            method: "GET",
-          }),
-          {} as RequestContext,
-        ),
-      ).rejects.toThrow(/Invalid search parameters/);
-    });
-
-    test("Sign-in handler with missing route param", async () => {
-      const { GET } = router;
-      const get = await GET(
-        new Request(
-          "https://example.com/auth/signin?redirect_uri=url_to_redirect",
-          { method: "GET" },
-        ),
-        {} as RequestContext,
-      );
-      expect(get.status).toBe(404);
-      expect(get.ok).toBeFalsy();
-      expect(await get.json()).toEqual({ message: "Not Found" });
-    });
-
-    test("Session handler with middleware", async () => {
-      const { GET } = router;
-      const get = await GET(
-        new Request("https://example.com/auth/session", { method: "GET" }),
-        {} as RequestContext,
-      );
-      expect(get.status).toBe(200);
-      expect(get.ok).toBeTruthy();
-      expect(await get.json()).toEqual({ message: "Get user session" });
-      expect(get.headers.get("session-token")).toBe("123abc-token");
-    });
-
-    test("Credentials handler", async () => {
-      const { POST } = router;
-      const post = await POST(
-        new Request("https://example.com/auth/credentials", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: "John",
-            password: "secret",
-          }),
-        }),
-        {} as RequestContext,
-      );
-      expect(post.status).toBe(200);
-      expect(post.ok).toBeTruthy();
-      expect(await post.json()).toEqual({
-        message: "Sign in with credentials",
-        credentials: { username: "John", password: "secret" },
-      });
-    });
-
-    test("Credentials handler with missing content-type", async () => {
-      const { POST } = router;
-      const body = JSON.stringify({
-        username: "John",
-        password: "secret",
-      });
-      const post = await POST(
-        new Request("https://example.com/auth/credentials", {
-          method: "POST",
-          body,
-        }),
-        {} as RequestContext,
-      );
-      expect(post.status).toBe(200);
-      expect(post.ok).toBeTruthy();
-      expect(await post.json()).toEqual({
-        message: "Sign in with credentials",
-        credentials: body,
-      });
-    });
-
-    test("Credentials handler with invalid body", async () => {
-      const { POST } = router;
-      await expect(
-        POST(
-          new Request("https://example.com/auth/credentials", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
+    describe("OAuth endpoints", () => {
+        const signInConfig = createEndpointConfig("/auth/signin/:oauth", {
+            schemas: {
+                searchParams: z.object({
+                    redirect_uri: z.string(),
+                }),
             },
-            body: JSON.stringify({
-              username: "John",
-            }),
-          }),
-          {} as RequestContext,
-        ),
-      ).rejects.toThrow(/Invalid request body/);
-    });
-  });
+        })
+        const sessionConfig = createEndpointConfig({
+            middlewares: [
+                async (_, ctx) => {
+                    ctx.headers.set("session-token", "123abc-token")
+                    return ctx
+                },
+            ],
+        })
 
-  describe("Invalid endpoints", () => {
-    test("No HTTP handlers defined", async () => {
-      const router = createRouter([]);
-      const post = await (router as any).POST(
-        new Request("https://example.com/auth/callback", { method: "POST" }),
-        {} as RequestContext,
-      );
-      expect(post).toBeInstanceOf(Response);
-      expect(post.status).toBe(404);
-      expect(post.ok).toBeFalsy();
-      expect(await post.json()).toEqual({ message: "Not Found" });
+        const signIn = createEndpoint(
+            "GET",
+            "/auth/signin/:oauth",
+            async () => {
+                return Response.json({ message: "Redirect to OAuth provider" }, { status: 302 })
+            },
+            signInConfig
+        )
 
-      const put = await (router as any).PUT(
-        new Request("https://example.com/auth/callback", { method: "PUT" }),
-        {} as RequestContext,
-      );
-      expect(put).toBeInstanceOf(Response);
-      expect(put.status).toBe(404);
-      expect(put.ok).toBeFalsy();
-      expect(await put.json()).toEqual({ message: "Not Found" });
-    });
-  });
+        const callback = createEndpoint("GET", "/auth/callback", async () => {
+            return Response.json({ message: "Handle OAuth callback" }, { status: 200 })
+        })
 
-  describe("With base path", () => {
-    const session = createEndpoint("GET", "/session", async () => {
-      return Response.json({ message: "Get user session" }, { status: 200 });
-    });
+        const session = createEndpoint(
+            "GET",
+            "/auth/session",
+            async (_, ctx) => {
+                const headers = ctx.headers
+                return Response.json({ message: "Get user session" }, { status: 200, headers })
+            },
+            sessionConfig
+        )
 
-    const router = createRouter([session], { basePath: "/api/auth" });
+        const credentialsConfig = createEndpointConfig({
+            schemas: {
+                body: z.object({
+                    username: z.string(),
+                    password: z.string(),
+                }),
+            },
+        })
 
-    test("Session handler with base path", async () => {
-      const { GET } = router;
-      const get = await GET(
-        new Request("https://example.com/api/auth/session", {
-          method: "GET",
-        }),
-        {} as RequestContext,
-      );
-      expect(get.status).toBe(200);
-      expect(get.ok).toBeTruthy();
-      expect(await get.json()).toEqual({ message: "Get user session" });
-    });
+        const credentials = createEndpoint(
+            "POST",
+            "/auth/credentials",
+            async (_, ctx) => {
+                const body = ctx.body
+                return Response.json({ message: "Sign in with credentials", credentials: body }, { status: 200 })
+            },
+            credentialsConfig
+        )
 
-    test("Session handler with missing base path", async () => {
-      const { GET } = router;
-      const get = await GET(
-        new Request("https://example.com/session", { method: "GET" }),
-        {} as RequestContext,
-      );
-      expect(get.status).toBe(404);
-      expect(get.ok).toBeFalsy();
-      expect(await get.json()).toEqual({ message: "Not Found" });
-    });
-  });
+        const router = createRouter([signIn, callback, session, credentials])
 
-  describe("With global middlewares", () => {
-    const session = createEndpoint("GET", "/session", async (_, ctx) => {
-      return Response.json(
-        { message: "Get user session" },
-        { status: 200, headers: ctx.headers },
-      );
-    });
+        test("Callback handler", async () => {
+            const { GET } = router
+            const get = await GET(new Request("https://example.com/auth/callback", { method: "GET" }), {} as RequestContext)
+            expect(get.status).toBe(200)
+            expect(get.ok).toBeTruthy()
+            expect(await get.json()).toEqual({ message: "Handle OAuth callback" })
+        })
 
-    const signIn = createEndpoint("POST", "/auth/:oauth", async (_, ctx) => {
-      return Response.json(
-        { message: "Sign in with OAuth" },
-        { status: 200, headers: ctx.headers },
-      );
-    });
+        test("Sign-in handler", async () => {
+            const { GET } = router
+            const get = await GET(
+                new Request("https://example.com/auth/signin/google?redirect_uri=url_to_redirect", { method: "GET" }),
+                {} as RequestContext
+            )
+            expect(get.status).toBe(302)
+            expect(await get.json()).toEqual({
+                message: "Redirect to OAuth provider",
+            })
+        })
 
-    describe("Add headers middleware", async () => {
-      const router = createRouter([session, signIn], {
-        middlewares: [
-          async (request) => {
-            request.headers.set("x-powered-by", "@aura-stack");
-            return request;
-          },
-        ],
-      });
-      const { GET, POST } = router;
+        test("Sign-in handler with missing search params", async () => {
+            const { GET } = router
+            await expect(
+                GET(
+                    new Request("https://example.com/auth/signin/google", {
+                        method: "GET",
+                    }),
+                    {} as RequestContext
+                )
+            ).rejects.toThrow(/Invalid search parameters/)
+        })
 
-      test("Add header in GET request", async () => {
-        const get = await GET(
-          new Request("https://example.com/session", { method: "GET" }),
-          {} as RequestContext,
-        );
-        expect(get.status).toBe(200);
-        expect(get.ok).toBeTruthy();
-        expect(get.headers.get("x-powered-by")).toBe("@aura-stack");
-        expect(await get.json()).toEqual({ message: "Get user session" });
-      });
+        test("Sign-in handler with missing route param", async () => {
+            const { GET } = router
+            const get = await GET(
+                new Request("https://example.com/auth/signin?redirect_uri=url_to_redirect", { method: "GET" }),
+                {} as RequestContext
+            )
+            expect(get.status).toBe(404)
+            expect(get.ok).toBeFalsy()
+            expect(await get.json()).toEqual({ message: "Not Found" })
+        })
 
-      test("Add header in POST request", async () => {
-        const post = await POST(
-          new Request("https://example.com/auth/google", { method: "POST" }),
-          {} as RequestContext,
-        );
-        expect(post.status).toBe(200);
-        expect(post.ok).toBeTruthy();
-        expect(post.headers.get("x-powered-by")).toBe("@aura-stack");
-        expect(await post.json()).toEqual({ message: "Sign in with OAuth" });
-      });
-    });
+        test("Session handler with middleware", async () => {
+            const { GET } = router
+            const get = await GET(new Request("https://example.com/auth/session", { method: "GET" }), {} as RequestContext)
+            expect(get.status).toBe(200)
+            expect(get.ok).toBeTruthy()
+            expect(await get.json()).toEqual({ message: "Get user session" })
+            expect(get.headers.get("session-token")).toBe("123abc-token")
+        })
 
-    describe("Block request middleware", async () => {
-      const router = createRouter([session], {
-        middlewares: [
-          async (request) => {
-            if (!request.headers.get("authorization")) {
-              return new Response(JSON.stringify({ message: "Forbidden" }), {
-                status: 403,
-              });
-            }
-            return request;
-          },
-        ],
-      });
-      const { GET } = router;
+        test("Credentials handler", async () => {
+            const { POST } = router
+            const post = await POST(
+                new Request("https://example.com/auth/credentials", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username: "John",
+                        password: "secret",
+                    }),
+                }),
+                {} as RequestContext
+            )
+            expect(post.status).toBe(200)
+            expect(post.ok).toBeTruthy()
+            expect(await post.json()).toEqual({
+                message: "Sign in with credentials",
+                credentials: { username: "John", password: "secret" },
+            })
+        })
 
-      test("Block request without authorization header", async () => {
-        const get = await GET(
-          new Request("https://example.com/session", { method: "GET" }),
-          {} as RequestContext,
-        );
-        expect(get).toBeInstanceOf(Response);
-        expect(get.status).toBe(403);
-        expect(await get.json()).toEqual({ message: "Forbidden" });
-      });
-    });
-  });
-});
+        test("Credentials handler with missing content-type", async () => {
+            const { POST } = router
+            const body = JSON.stringify({
+                username: "John",
+                password: "secret",
+            })
+            const post = await POST(
+                new Request("https://example.com/auth/credentials", {
+                    method: "POST",
+                    body,
+                }),
+                {} as RequestContext
+            )
+            expect(post.status).toBe(200)
+            expect(post.ok).toBeTruthy()
+            expect(await post.json()).toEqual({
+                message: "Sign in with credentials",
+                credentials: body,
+            })
+        })
+
+        test("Credentials handler with invalid body", async () => {
+            const { POST } = router
+            await expect(
+                POST(
+                    new Request("https://example.com/auth/credentials", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            username: "John",
+                        }),
+                    }),
+                    {} as RequestContext
+                )
+            ).rejects.toThrow(/Invalid request body/)
+        })
+    })
+
+    describe("Invalid endpoints", () => {
+        test("No HTTP handlers defined", async () => {
+            const router = createRouter([])
+            const post = await (router as any).POST(
+                new Request("https://example.com/auth/callback", { method: "POST" }),
+                {} as RequestContext
+            )
+            expect(post).toBeInstanceOf(Response)
+            expect(post.status).toBe(404)
+            expect(post.ok).toBeFalsy()
+            expect(await post.json()).toEqual({ message: "Not Found" })
+
+            const put = await (router as any).PUT(
+                new Request("https://example.com/auth/callback", { method: "PUT" }),
+                {} as RequestContext
+            )
+            expect(put).toBeInstanceOf(Response)
+            expect(put.status).toBe(404)
+            expect(put.ok).toBeFalsy()
+            expect(await put.json()).toEqual({ message: "Not Found" })
+        })
+    })
+
+    describe("With base path", () => {
+        const session = createEndpoint("GET", "/session", async () => {
+            return Response.json({ message: "Get user session" }, { status: 200 })
+        })
+
+        const router = createRouter([session], { basePath: "/api/auth" })
+
+        test("Session handler with base path", async () => {
+            const { GET } = router
+            const get = await GET(
+                new Request("https://example.com/api/auth/session", {
+                    method: "GET",
+                }),
+                {} as RequestContext
+            )
+            expect(get.status).toBe(200)
+            expect(get.ok).toBeTruthy()
+            expect(await get.json()).toEqual({ message: "Get user session" })
+        })
+
+        test("Session handler with missing base path", async () => {
+            const { GET } = router
+            const get = await GET(new Request("https://example.com/session", { method: "GET" }), {} as RequestContext)
+            expect(get.status).toBe(404)
+            expect(get.ok).toBeFalsy()
+            expect(await get.json()).toEqual({ message: "Not Found" })
+        })
+    })
+
+    describe("With global middlewares", () => {
+        const session = createEndpoint("GET", "/session", async (_, ctx) => {
+            return Response.json({ message: "Get user session" }, { status: 200, headers: ctx.headers })
+        })
+
+        const signIn = createEndpoint("POST", "/auth/:oauth", async (_, ctx) => {
+            return Response.json({ message: "Sign in with OAuth" }, { status: 200, headers: ctx.headers })
+        })
+
+        describe("Add headers middleware", async () => {
+            const router = createRouter([session, signIn], {
+                middlewares: [
+                    async (request) => {
+                        request.headers.set("x-powered-by", "@aura-stack")
+                        return request
+                    },
+                ],
+            })
+            const { GET, POST } = router
+
+            test("Add header in GET request", async () => {
+                const get = await GET(new Request("https://example.com/session", { method: "GET" }), {} as RequestContext)
+                expect(get.status).toBe(200)
+                expect(get.ok).toBeTruthy()
+                expect(get.headers.get("x-powered-by")).toBe("@aura-stack")
+                expect(await get.json()).toEqual({ message: "Get user session" })
+            })
+
+            test("Add header in POST request", async () => {
+                const post = await POST(new Request("https://example.com/auth/google", { method: "POST" }), {} as RequestContext)
+                expect(post.status).toBe(200)
+                expect(post.ok).toBeTruthy()
+                expect(post.headers.get("x-powered-by")).toBe("@aura-stack")
+                expect(await post.json()).toEqual({ message: "Sign in with OAuth" })
+            })
+        })
+
+        describe("Block request middleware", async () => {
+            const router = createRouter([session], {
+                middlewares: [
+                    async (request) => {
+                        if (!request.headers.get("authorization")) {
+                            return new Response(JSON.stringify({ message: "Forbidden" }), {
+                                status: 403,
+                            })
+                        }
+                        return request
+                    },
+                ],
+            })
+            const { GET } = router
+
+            test("Block request without authorization header", async () => {
+                const get = await GET(new Request("https://example.com/session", { method: "GET" }), {} as RequestContext)
+                expect(get).toBeInstanceOf(Response)
+                expect(get.status).toBe(403)
+                expect(await get.json()).toEqual({ message: "Forbidden" })
+            })
+        })
+    })
+})

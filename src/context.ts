@@ -1,12 +1,6 @@
-import type {
-  EndpointConfig,
-  Params,
-  RoutePattern,
-  ContextSearchParams,
-  ContentType,
-} from "./types.js";
-import { createRoutePattern } from "./endpoint.js";
-import { isSupportedBodyMethod } from "./assert.js";
+import type { EndpointConfig, Params, RoutePattern, ContextSearchParams, ContentType } from "./types.js"
+import { createRoutePattern } from "./endpoint.js"
+import { isSupportedBodyMethod } from "./assert.js"
 
 /**
  * Extracts route parameters from a given path using the specified route pattern.
@@ -26,28 +20,25 @@ import { isSupportedBodyMethod } from "./assert.js";
  * // Expected: { userId: "123", postId: "456" }
  * const params = getRouteParams(route, path);
  */
-export const getRouteParams = <Route extends RoutePattern>(
-  route: Route,
-  path: string,
-): Params<Route> => {
-  const routeRegex = createRoutePattern(route);
-  if (!routeRegex.test(path)) {
-    return {} as Params<Route>;
-  }
-  const params = routeRegex
-    .exec(route)
-    ?.slice(1)
-    .map((seg) => seg.replace(":", ""));
-  if (!params) return {} as Params<Route>;
-  const values = routeRegex.exec(path)?.slice(1);
-  return params.reduce(
-    (previous, now, idx) => ({
-      ...previous,
-      [now]: decodeURIComponent(values?.[idx] ?? ""),
-    }),
-    {} as Params<Route>,
-  );
-};
+export const getRouteParams = <Route extends RoutePattern>(route: Route, path: string): Params<Route> => {
+    const routeRegex = createRoutePattern(route)
+    if (!routeRegex.test(path)) {
+        return {} as Params<Route>
+    }
+    const params = routeRegex
+        .exec(route)
+        ?.slice(1)
+        .map((seg) => seg.replace(":", ""))
+    if (!params) return {} as Params<Route>
+    const values = routeRegex.exec(path)?.slice(1)
+    return params.reduce(
+        (previous, now, idx) => ({
+            ...previous,
+            [now]: decodeURIComponent(values?.[idx] ?? ""),
+        }),
+        {} as Params<Route>
+    )
+}
 
 /**
  * Extracts and validates search parameters from a given URL from the request.
@@ -81,21 +72,19 @@ export const getRouteParams = <Route extends RoutePattern>(
  * const searchParams2 = getSearchParams(url2, {} as EndpointConfig);
  */
 export const getSearchParams = <Config extends EndpointConfig>(
-  url: string,
-  config: Config,
+    url: string,
+    config: Config
 ): ContextSearchParams<Config["schemas"]>["searchParams"] => {
-  const route = new URL(url);
-  if (config.schemas?.searchParams) {
-    const parsed = config.schemas.searchParams.safeParse(
-      Object.fromEntries(route.searchParams.entries()),
-    );
-    if (!parsed.success) {
-      throw new Error(`Invalid search parameters: ${parsed.error.message}`);
+    const route = new URL(url)
+    if (config.schemas?.searchParams) {
+        const parsed = config.schemas.searchParams.safeParse(Object.fromEntries(route.searchParams.entries()))
+        if (!parsed.success) {
+            throw new Error(`Invalid search parameters: ${parsed.error.message}`)
+        }
+        return parsed.data
     }
-    return parsed.data;
-  }
-  return new URLSearchParams(route.searchParams.toString());
-};
+    return new URLSearchParams(route.searchParams.toString())
+}
 
 /**
  * Extracts headers from the given Request object and returns them as a Headers instance.
@@ -112,8 +101,8 @@ export const getSearchParams = <Config extends EndpointConfig>(
  * const headers = getHeaders(request);
  */
 export const getHeaders = (request: Request): Headers => {
-  return new Headers(request.headers);
-};
+    return new Headers(request.headers)
+}
 
 /**
  * Extracts and parses the body of a Request object based on its Content-Type header.
@@ -127,48 +116,37 @@ export const getHeaders = (request: Request): Headers => {
  * @param config - Configuration object that may include a schema for validation.
  * @returns The parsed body of the request or an error if validation fails.
  */
-export const getBody = async <Config extends EndpointConfig>(
-  request: Request,
-  config: Config,
-) => {
-  if (!isSupportedBodyMethod(request.method)) {
-    return undefined;
-  }
-  const contentType =
-    request.headers.get("Content-Type") ?? ("" as ContentType);
-  if (contentType.includes("application/json")) {
-    const json = await request.json();
-    if (config.schemas?.body) {
-      const parsed = config.schemas.body.safeParse(json);
-      if (!parsed.success) {
-        throw new Error("Invalid request body");
-      }
-      return parsed.data;
+export const getBody = async <Config extends EndpointConfig>(request: Request, config: Config) => {
+    if (!isSupportedBodyMethod(request.method)) {
+        return undefined
     }
-    return json;
-  }
-  if (
-    contentType.includes("application/x-www-form-urlencoded") ||
-    contentType.includes("multipart/form-data")
-  ) {
-    return await request.formData();
-  }
-  if (contentType.includes("text/")) {
-    return await request.text();
-  }
-  if (contentType.includes("application/octet-stream")) {
-    return await request.arrayBuffer();
-  }
-  if (
-    contentType.includes("image/") ||
-    contentType.includes("video/") ||
-    contentType.includes("audio/")
-  ) {
-    return await request.blob();
-  }
-  /**
-   * @todo: Handle other content types
-   * throw new Error(`Unsupported Content-Type: ${contentType}`);
-   */
-  return null;
-};
+    const contentType = request.headers.get("Content-Type") ?? ("" as ContentType)
+    if (contentType.includes("application/json")) {
+        const json = await request.json()
+        if (config.schemas?.body) {
+            const parsed = config.schemas.body.safeParse(json)
+            if (!parsed.success) {
+                throw new Error("Invalid request body")
+            }
+            return parsed.data
+        }
+        return json
+    }
+    if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
+        return await request.formData()
+    }
+    if (contentType.includes("text/")) {
+        return await request.text()
+    }
+    if (contentType.includes("application/octet-stream")) {
+        return await request.arrayBuffer()
+    }
+    if (contentType.includes("image/") || contentType.includes("video/") || contentType.includes("audio/")) {
+        return await request.blob()
+    }
+    /**
+     * @todo: Handle other content types
+     * throw new Error(`Unsupported Content-Type: ${contentType}`);
+     */
+    return null
+}

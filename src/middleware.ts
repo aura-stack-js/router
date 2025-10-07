@@ -1,9 +1,4 @@
-import type {
-  EndpointConfig,
-  MiddlewareFunction,
-  RequestContext,
-  RouterConfig,
-} from "./types.js";
+import type { EndpointConfig, MiddlewareFunction, RequestContext, RouterConfig } from "./types.js"
 
 /**
  * Executes the middlewares in sequence, passing the request to each middleware.
@@ -12,23 +7,20 @@ import type {
  * @param middlewares - Array of global middleware functions to be executed
  * @returns - The modified request after all middlewares have been executed
  */
-export const executeGlobalMiddlewares = async (
-  request: Request,
-  middlewares: RouterConfig["middlewares"],
-) => {
-  if (!middlewares) return request;
-  for (const middleware of middlewares) {
-    if (typeof middleware !== "function") {
-      throw new TypeError("Middleware must be a function");
+export const executeGlobalMiddlewares = async (request: Request, middlewares: RouterConfig["middlewares"]) => {
+    if (!middlewares) return request
+    for (const middleware of middlewares) {
+        if (typeof middleware !== "function") {
+            throw new TypeError("Middleware must be a function")
+        }
+        const executed = await middleware(request)
+        if (executed instanceof Response) {
+            return executed
+        }
+        request = executed
     }
-    const executed = await middleware(request);
-    if (executed instanceof Response) {
-      return executed;
-    }
-    request = executed;
-  }
-  return request;
-};
+    return request
+}
 
 /**
  * Executes middlewares in sequence, passing the request and context to each middleware.
@@ -38,20 +30,17 @@ export const executeGlobalMiddlewares = async (
  * @param middlewares - Array of middleware functions to be executed
  * @returns The modified context after all middlewares have been executed
  */
-export const executeMiddlewares = async <
-  const RouteParams extends Record<string, string>,
-  const Config extends EndpointConfig,
->(
-  request: Request,
-  context: RequestContext<RouteParams, Config>,
-  middlewares: MiddlewareFunction<RouteParams, Config>[] = [],
+export const executeMiddlewares = async <const RouteParams extends Record<string, string>, const Config extends EndpointConfig>(
+    request: Request,
+    context: RequestContext<RouteParams, Config>,
+    middlewares: MiddlewareFunction<RouteParams, Config>[] = []
 ): Promise<RequestContext<RouteParams, Config>> => {
-  let ctx = context;
-  for (const middleware of middlewares) {
-    if (typeof middleware !== "function") {
-      throw new TypeError("Middleware must be a function");
+    let ctx = context
+    for (const middleware of middlewares) {
+        if (typeof middleware !== "function") {
+            throw new TypeError("Middleware must be a function")
+        }
+        ctx = await middleware(request, ctx)
     }
-    ctx = await middleware(request, ctx);
-  }
-  return ctx;
-};
+    return ctx
+}
