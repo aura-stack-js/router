@@ -2,6 +2,7 @@ import type { HTTPMethod, RequestContext, RouteEndpoint, RoutePattern, RouterCon
 import { createRoutePattern } from "./endpoint.js"
 import { getBody, getHeaders, getRouteParams, getSearchParams } from "./context.js"
 import { executeGlobalMiddlewares, executeMiddlewares } from "./middleware.js"
+import { AuraStackRouterError } from "./error.js"
 
 /**
  * Creates the entry point for the server, handling the endpoints defined in the router.
@@ -27,34 +28,43 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
     endpoints.forEach((endpoint) => groups[endpoint.method].push(endpoint))
     for (const method in groups) {
         server[method as keyof typeof server] = async (request: Request, ctx: RequestContext) => {
-            const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
-            if (globalRequest instanceof Response) {
-                return globalRequest
+            try {
+                const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
+                if (globalRequest instanceof Response) {
+                    return globalRequest
+                }
+                const url = new URL(globalRequest.url)
+                const pathname = url.pathname
+                const endpoint = groups[method as HTTPMethod].find((endpoint) => {
+                    const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
+                    const regex = createRoutePattern(withBasePath as RoutePattern)
+                    return regex.test(pathname)
+                })
+                if (endpoint) {
+                    const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
+                    const body = await getBody(globalRequest, endpoint.config)
+                    const params = getRouteParams(withBasePath as RoutePattern, pathname)
+                    const searchParams = getSearchParams(globalRequest.url, endpoint.config)
+                    const headers = getHeaders(globalRequest)
+                    const context = {
+                        ...ctx,
+                        params,
+                        searchParams,
+                        headers,
+                        body,
+                    } as RequestContext<Record<string, string>, typeof endpoint.config>
+                    await executeMiddlewares(globalRequest, context, endpoint.config.middlewares)
+                    return endpoint.handler(globalRequest, context)
+                }
+                return Response.json({ message: "Not Found" }, { status: 404 })
+            } catch (error) {
+                if (error instanceof AuraStackRouterError) {
+                    const { message, status, statusText } = error
+                    console.log("StatusText: ", statusText)
+                    return Response.json({ message }, { status, statusText })
+                }
+                return Response.json({ message: "Internal Server Error" }, { status: 500 })
             }
-            const url = new URL(globalRequest.url)
-            const pathname = url.pathname
-            const endpoint = groups[method as HTTPMethod].find((endpoint) => {
-                const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
-                const regex = createRoutePattern(withBasePath as RoutePattern)
-                return regex.test(pathname)
-            })
-            if (endpoint) {
-                const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
-                const body = await getBody(globalRequest, endpoint.config)
-                const params = getRouteParams(withBasePath as RoutePattern, pathname)
-                const searchParams = getSearchParams(globalRequest.url, endpoint.config)
-                const headers = getHeaders(globalRequest)
-                const context = {
-                    ...ctx,
-                    params,
-                    searchParams,
-                    headers,
-                    body,
-                } as RequestContext<Record<string, string>, typeof endpoint.config>
-                await executeMiddlewares(globalRequest, context, endpoint.config.middlewares)
-                return endpoint.handler(globalRequest, context)
-            }
-            return Response.json({ message: "Not Found" }, { status: 404 })
         }
     }
     return server

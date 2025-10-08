@@ -35,24 +35,6 @@ describe("getRouteParams", () => {
             expected: {},
         },
         {
-            description: "Mismatched route and path",
-            route: "/users/:userId/books",
-            path: "/users/123/books/456",
-            expected: {},
-        },
-        {
-            description: "Mismatched with path with extra segments",
-            route: "/users/:userId",
-            path: "/users/123/books",
-            expected: {},
-        },
-        {
-            description: "Mismatched with path with missing segments",
-            route: "/users/:userId/books/:bookId",
-            path: "/users/123/books",
-            expected: {},
-        },
-        {
             description: "Parameters with special characters",
             route: "/search/:query",
             path: "/search/hello%20world",
@@ -65,6 +47,35 @@ describe("getRouteParams", () => {
     testCases.forEach(({ description, route, path, expected }) => {
         test.concurrent(description, ({ expect }) => {
             expect(getRouteParams(route as RoutePattern, path)).toEqual(expected)
+        })
+    })
+
+    describe("With invalid route or path", () => {
+        const testCases = [
+            {
+                description: "Path does not match the route pattern",
+                route: "/users/:userId/books",
+                path: "/users/123/movies",
+                expected: /Missing required route params for route: \/users\/:userId\/books/,
+            },
+            {
+                description: "Path with missing parameters",
+                route: "/users/:userId/books/:bookId",
+                path: "/users/123/books",
+                expected: /Missing required route params for route: \/users\/:userId\/books\/:bookId/,
+            },
+            {
+                description: "Path with extra segments",
+                route: "/users/:userId",
+                path: "/users/123/books",
+                expected: /Missing required route params for route: \/users\/:userId/,
+            },
+        ]
+
+        testCases.forEach(({ description, route, path, expected }) => {
+            test.concurrent(description, ({ expect }) => {
+                expect(() => getRouteParams(route as RoutePattern, path)).toThrowError(expected)
+            })
         })
     })
 })

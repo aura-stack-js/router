@@ -121,7 +121,7 @@ describe("executeMiddlewares", () => {
                 } as RequestContext,
                 middlewares
             )
-        ).rejects.toThrowError(/Middleware must be a function/)
+        ).rejects.toThrowError(/Handler threw an error/)
     })
 
     test.concurrent("No middleware", async ({ expect }) => {

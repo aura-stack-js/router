@@ -14,9 +14,6 @@ import type {
 } from "../src/types.js"
 import type { ZodObject, ZodString } from "zod"
 
-/**
- * @todo: implement runtime tests for the types
- */
 describe("RoutePattern", () => {
     expectTypeOf<"/users/:userId/books/:bookId">().toExtend<RoutePattern>()
     expectTypeOf<"/users/:userId/:bookId">().toExtend<RoutePattern>()

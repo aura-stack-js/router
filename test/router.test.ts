@@ -88,14 +88,14 @@ describe("createRouter", () => {
 
         test("Sign-in handler with missing search params", async () => {
             const { GET } = router
-            await expect(
-                GET(
-                    new Request("https://example.com/auth/signin/google", {
-                        method: "GET",
-                    }),
-                    {} as RequestContext
-                )
-            ).rejects.toThrow(/Invalid search parameters/)
+            const get = await GET(
+                new Request("https://example.com/auth/signin/google", {
+                    method: "GET",
+                }),
+                {} as RequestContext
+            )
+            expect(get.status).toBe(422)
+            expect(await get.json()).toEqual({ message: "Invalid search parameters" })
         })
 
         test("Sign-in handler with missing route param", async () => {
@@ -164,20 +164,20 @@ describe("createRouter", () => {
 
         test("Credentials handler with invalid body", async () => {
             const { POST } = router
-            await expect(
-                POST(
-                    new Request("https://example.com/auth/credentials", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            username: "John",
-                        }),
+            const post = await POST(
+                new Request("https://example.com/auth/credentials", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username: "John",
                     }),
-                    {} as RequestContext
-                )
-            ).rejects.toThrow(/Invalid request body/)
+                }),
+                {} as RequestContext
+            )
+            expect(await post.json()).toEqual({ message: "Invalid request body" })
+            expect(post.status).toBe(422)
         })
     })
 

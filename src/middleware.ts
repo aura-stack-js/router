@@ -1,3 +1,4 @@
+import { AuraStackRouterError } from "./error.js"
 import type { EndpointConfig, MiddlewareFunction, RequestContext, RouterConfig } from "./types.js"
 
 /**
@@ -11,13 +12,16 @@ export const executeGlobalMiddlewares = async (request: Request, middlewares: Ro
     if (!middlewares) return request
     for (const middleware of middlewares) {
         if (typeof middleware !== "function") {
-            throw new TypeError("Middleware must be a function")
+            throw new AuraStackRouterError("BAD_REQUEST", "Global middlewares must be functions")
         }
         const executed = await middleware(request)
         if (executed instanceof Response) {
             return executed
         }
         request = executed
+    }
+    if (!request || !(request instanceof Request)) {
+        throw new AuraStackRouterError("BAD_REQUEST", "Global middleware must return a Request or Response object")
     }
     return request
 }
@@ -35,12 +39,16 @@ export const executeMiddlewares = async <const RouteParams extends Record<string
     context: RequestContext<RouteParams, Config>,
     middlewares: MiddlewareFunction<RouteParams, Config>[] = []
 ): Promise<RequestContext<RouteParams, Config>> => {
-    let ctx = context
-    for (const middleware of middlewares) {
-        if (typeof middleware !== "function") {
-            throw new TypeError("Middleware must be a function")
+    try {
+        let ctx = context
+        for (const middleware of middlewares) {
+            if (typeof middleware !== "function") {
+                throw new AuraStackRouterError("BAD_REQUEST", "Middleware must be a function")
+            }
+            ctx = await middleware(request, ctx)
         }
-        ctx = await middleware(request, ctx)
+        return ctx
+    } catch {
+        throw new AuraStackRouterError("BAD_REQUEST", "Handler threw an error")
     }
-    return ctx
 }
