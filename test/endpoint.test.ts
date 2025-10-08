@@ -134,16 +134,17 @@ describe("createEndpoint", () => {
             })
 
             test("With invalid body", async ({ expect }) => {
-                await expect(
-                    POST(
-                        new Request("https://example.com/auth/credentials", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ username: "John" }),
-                        }),
-                        {} as RequestContext
-                    )
-                ).rejects.toThrowError(/Invalid request body/)
+                const post = await POST(
+                    new Request("https://example.com/auth/credentials", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ username: "John" }),
+                    }),
+                    {} as RequestContext
+                )
+                expect(post.status).toBe(422)
+                expect(await post.json()).toEqual({ message: "Invalid request body" })
+                expect(post.statusText).toBe("UNPROCESSABLE_ENTITY")
             })
         })
 
@@ -174,9 +175,13 @@ describe("createEndpoint", () => {
             })
 
             test("With invalid searchParams", async ({ expect }) => {
-                await expect(
-                    GET(new Request("https://example.com/auth/google?state=123abc"), {} as RequestContext)
-                ).rejects.toThrowError(/Invalid search parameters/)
+                const get = await GET(
+                    new Request("https://example.com/auth/google?state=123abc", { method: "GET" }),
+                    {} as RequestContext
+                )
+                expect(await get.json()).toEqual({ message: "Invalid search parameters" })
+                expect(get.status).toBe(422)
+                expect(get.statusText).toBe("UNPROCESSABLE_ENTITY")
             })
         })
     })

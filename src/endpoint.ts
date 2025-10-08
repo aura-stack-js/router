@@ -1,6 +1,6 @@
 import type { EndpointConfig, EndpointSchemas, HTTPMethod, RouteEndpoint, RouteHandler, RoutePattern } from "./types.js"
 import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js"
-import { InvalidHandlerError, MismatchRouteError, UnsupportedHTTPMethodError } from "./error.js"
+import { AuraStackRouterError } from "./error.js"
 
 /**
  * Create a RegExp pattern from a route string. This function allows segment the
@@ -45,13 +45,13 @@ export const createEndpoint = <
     config: EndpointConfig<Route, Schemas> = {}
 ): RouteEndpoint<Method, Route, {}> => {
     if (!isSupportedMethod(method)) {
-        throw new UnsupportedHTTPMethodError(`Unsupported HTTP method: ${method}`)
+        throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `Unsupported HTTP method: ${method}`)
     }
     if (!isValidRoute(route)) {
-        throw new MismatchRouteError(`Invalid route format: ${route}`)
+        throw new AuraStackRouterError("BAD_REQUEST", `Invalid route format: ${route}`)
     }
     if (!isValidHandler(handler)) {
-        throw new InvalidHandlerError("Handler must be a function")
+        throw new AuraStackRouterError("BAD_REQUEST", "Handler must be a function")
     }
     return { method, route, handler, config }
 }
