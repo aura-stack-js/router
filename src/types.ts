@@ -140,7 +140,7 @@ export type InferMethod<Endpoints extends RouteEndpoint[]> = Endpoints extends u
  * Each method is a function that takes a request and context, returning a promise of a response.
  */
 export type GetHttpHandlers<Endpoints extends RouteEndpoint[]> = {
-    [Method in InferMethod<Endpoints>]: (req: Request, ctx: RequestContext) => Promise<Response>
+    [Method in InferMethod<Endpoints>]: (req: Request) => Promise<Response>
 }
 
 /**
