@@ -27,7 +27,7 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
     }
     endpoints.forEach((endpoint) => groups[endpoint.method].push(endpoint))
     for (const method in groups) {
-        server[method as keyof typeof server] = async (request: Request, ctx: RequestContext) => {
+        server[method as keyof typeof server] = async (request: Request) => {
             try {
                 const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
                 if (globalRequest instanceof Response) {
@@ -47,7 +47,6 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
                     const searchParams = getSearchParams(globalRequest.url, endpoint.config)
                     const headers = getHeaders(globalRequest)
                     const context = {
-                        ...ctx,
                         params,
                         searchParams,
                         headers,
@@ -60,7 +59,6 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
             } catch (error) {
                 if (error instanceof AuraStackRouterError) {
                     const { message, status, statusText } = error
-                    console.log("StatusText: ", statusText)
                     return Response.json({ message }, { status, statusText })
                 }
                 return Response.json({ message: "Internal Server Error" }, { status: 500 })

@@ -2,7 +2,7 @@ import z from "zod"
 import { describe, test } from "vitest"
 import { createRouter } from "../src/router.js"
 import { createEndpoint, createRoutePattern } from "../src/endpoint.js"
-import type { HTTPMethod, RoutePattern, RequestContext } from "../src/types.js"
+import type { HTTPMethod, RoutePattern } from "../src/types.js"
 
 describe("createRoutePattern", () => {
     const testCases = [
@@ -124,8 +124,7 @@ describe("createEndpoint", () => {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ username: "John", password: "secret" }),
-                    }),
-                    {} as RequestContext
+                    })
                 )
                 expect(post.ok).toBe(true)
                 expect(await post.json()).toEqual({
@@ -139,8 +138,7 @@ describe("createEndpoint", () => {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ username: "John" }),
-                    }),
-                    {} as RequestContext
+                    })
                 )
                 expect(post.status).toBe(422)
                 expect(await post.json()).toEqual({ message: "Invalid request body" })
@@ -167,7 +165,7 @@ describe("createEndpoint", () => {
             const { GET } = createRouter([endpoint])
 
             test("With valid searchParams", async ({ expect }) => {
-                const get = await GET(new Request("https://example.com/auth/google?state=123abc&code=123"), {} as RequestContext)
+                const get = await GET(new Request("https://example.com/auth/google?state=123abc&code=123"))
                 expect(get.ok).toBe(true)
                 expect(await get.json()).toEqual({
                     searchParams: { state: "123abc", code: "123" },
@@ -175,10 +173,7 @@ describe("createEndpoint", () => {
             })
 
             test("With invalid searchParams", async ({ expect }) => {
-                const get = await GET(
-                    new Request("https://example.com/auth/google?state=123abc", { method: "GET" }),
-                    {} as RequestContext
-                )
+                const get = await GET(new Request("https://example.com/auth/google?state=123abc", { method: "GET" }))
                 expect(await get.json()).toEqual({ message: "Invalid search parameters" })
                 expect(get.status).toBe(422)
                 expect(get.statusText).toBe("UNPROCESSABLE_ENTITY")
@@ -205,7 +200,7 @@ describe("createEndpoint", () => {
                 }
             )
             const { GET } = createRouter([endpoint])
-            const get = await GET(new Request("https://example.com/auth/github"), {} as RequestContext)
+            const get = await GET(new Request("https://example.com/auth/github"))
             expect(get.ok).toBe(true)
             expect(await get.json()).toEqual({ oauth: "google" })
         })
@@ -229,7 +224,7 @@ describe("createEndpoint", () => {
                 }
             )
             const { GET } = createRouter([endpoint])
-            const get = await GET(new Request("https://example.com/auth/google"), {} as RequestContext)
+            const get = await GET(new Request("https://example.com/auth/google"))
             expect(get.ok).toBe(true)
             expect(await get.json()).toEqual({
                 searchParams: { state: "123abc", code: "123" },
@@ -254,7 +249,7 @@ describe("createEndpoint", () => {
                 }
             )
             const { GET } = createRouter([endpoint])
-            const get = await GET(new Request("https://example.com/headers"), {} as RequestContext)
+            const get = await GET(new Request("https://example.com/headers"))
             expect(get.ok).toBe(true)
             expect(await get.json()).toEqual({
                 headers: { authorization: "Bearer token" },
@@ -293,8 +288,7 @@ describe("createEndpoint", () => {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username: "John", password: "secret" }),
-                }),
-                {} as RequestContext
+                })
             )
             expect(post.ok).toBe(true)
             expect(await post.json()).toEqual({
@@ -326,10 +320,7 @@ describe("createEndpoint", () => {
                 }
             )
             const { GET } = createRouter([endpoint])
-            const get = await GET(
-                new Request("https://example.com/auth/google?redirect_uri=https://app.com/callback"),
-                {} as RequestContext
-            )
+            const get = await GET(new Request("https://example.com/auth/google?redirect_uri=https://app.com/callback"))
             expect(get.ok).toBe(true)
             expect(await get.json()).toEqual({
                 searchParams: {
@@ -360,7 +351,7 @@ describe("createEndpoint", () => {
             )
 
             const { GET } = createRouter([endpoint])
-            const get = await GET(new Request("https://example.com/auth/github"), {} as RequestContext)
+            const get = await GET(new Request("https://example.com/auth/github"))
             expect(get.ok).toBe(true)
             expect(await get.json()).toEqual({
                 params: { oauth: "google" },

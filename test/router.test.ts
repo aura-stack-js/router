@@ -68,7 +68,7 @@ describe("createRouter", () => {
 
         test("Callback handler", async () => {
             const { GET } = router
-            const get = await GET(new Request("https://example.com/auth/callback", { method: "GET" }), {} as RequestContext)
+            const get = await GET(new Request("https://example.com/auth/callback", { method: "GET" }))
             expect(get.status).toBe(200)
             expect(get.ok).toBeTruthy()
             expect(await get.json()).toEqual({ message: "Handle OAuth callback" })
@@ -77,8 +77,7 @@ describe("createRouter", () => {
         test("Sign-in handler", async () => {
             const { GET } = router
             const get = await GET(
-                new Request("https://example.com/auth/signin/google?redirect_uri=url_to_redirect", { method: "GET" }),
-                {} as RequestContext
+                new Request("https://example.com/auth/signin/google?redirect_uri=url_to_redirect", { method: "GET" })
             )
             expect(get.status).toBe(302)
             expect(await get.json()).toEqual({
@@ -91,8 +90,7 @@ describe("createRouter", () => {
             const get = await GET(
                 new Request("https://example.com/auth/signin/google", {
                     method: "GET",
-                }),
-                {} as RequestContext
+                })
             )
             expect(get.status).toBe(422)
             expect(await get.json()).toEqual({ message: "Invalid search parameters" })
@@ -100,10 +98,7 @@ describe("createRouter", () => {
 
         test("Sign-in handler with missing route param", async () => {
             const { GET } = router
-            const get = await GET(
-                new Request("https://example.com/auth/signin?redirect_uri=url_to_redirect", { method: "GET" }),
-                {} as RequestContext
-            )
+            const get = await GET(new Request("https://example.com/auth/signin?redirect_uri=url_to_redirect", { method: "GET" }))
             expect(get.status).toBe(404)
             expect(get.ok).toBeFalsy()
             expect(await get.json()).toEqual({ message: "Not Found" })
@@ -111,7 +106,7 @@ describe("createRouter", () => {
 
         test("Session handler with middleware", async () => {
             const { GET } = router
-            const get = await GET(new Request("https://example.com/auth/session", { method: "GET" }), {} as RequestContext)
+            const get = await GET(new Request("https://example.com/auth/session", { method: "GET" }))
             expect(get.status).toBe(200)
             expect(get.ok).toBeTruthy()
             expect(await get.json()).toEqual({ message: "Get user session" })
@@ -130,8 +125,7 @@ describe("createRouter", () => {
                         username: "John",
                         password: "secret",
                     }),
-                }),
-                {} as RequestContext
+                })
             )
             expect(post.status).toBe(200)
             expect(post.ok).toBeTruthy()
@@ -151,8 +145,7 @@ describe("createRouter", () => {
                 new Request("https://example.com/auth/credentials", {
                     method: "POST",
                     body,
-                }),
-                {} as RequestContext
+                })
             )
             expect(post.status).toBe(200)
             expect(post.ok).toBeTruthy()
@@ -173,8 +166,7 @@ describe("createRouter", () => {
                     body: JSON.stringify({
                         username: "John",
                     }),
-                }),
-                {} as RequestContext
+                })
             )
             expect(await post.json()).toEqual({ message: "Invalid request body" })
             expect(post.status).toBe(422)
@@ -184,19 +176,13 @@ describe("createRouter", () => {
     describe("Invalid endpoints", () => {
         test("No HTTP handlers defined", async () => {
             const router = createRouter([])
-            const post = await (router as any).POST(
-                new Request("https://example.com/auth/callback", { method: "POST" }),
-                {} as RequestContext
-            )
+            const post = await (router as any).POST(new Request("https://example.com/auth/callback", { method: "POST" }))
             expect(post).toBeInstanceOf(Response)
             expect(post.status).toBe(404)
             expect(post.ok).toBeFalsy()
             expect(await post.json()).toEqual({ message: "Not Found" })
 
-            const put = await (router as any).PUT(
-                new Request("https://example.com/auth/callback", { method: "PUT" }),
-                {} as RequestContext
-            )
+            const put = await (router as any).PUT(new Request("https://example.com/auth/callback", { method: "PUT" }))
             expect(put).toBeInstanceOf(Response)
             expect(put.status).toBe(404)
             expect(put.ok).toBeFalsy()
@@ -216,8 +202,7 @@ describe("createRouter", () => {
             const get = await GET(
                 new Request("https://example.com/api/auth/session", {
                     method: "GET",
-                }),
-                {} as RequestContext
+                })
             )
             expect(get.status).toBe(200)
             expect(get.ok).toBeTruthy()
@@ -226,7 +211,7 @@ describe("createRouter", () => {
 
         test("Session handler with missing base path", async () => {
             const { GET } = router
-            const get = await GET(new Request("https://example.com/session", { method: "GET" }), {} as RequestContext)
+            const get = await GET(new Request("https://example.com/session", { method: "GET" }))
             expect(get.status).toBe(404)
             expect(get.ok).toBeFalsy()
             expect(await get.json()).toEqual({ message: "Not Found" })
@@ -254,7 +239,7 @@ describe("createRouter", () => {
             const { GET, POST } = router
 
             test("Add header in GET request", async () => {
-                const get = await GET(new Request("https://example.com/session", { method: "GET" }), {} as RequestContext)
+                const get = await GET(new Request("https://example.com/session", { method: "GET" }))
                 expect(get.status).toBe(200)
                 expect(get.ok).toBeTruthy()
                 expect(get.headers.get("x-powered-by")).toBe("@aura-stack")
@@ -262,7 +247,7 @@ describe("createRouter", () => {
             })
 
             test("Add header in POST request", async () => {
-                const post = await POST(new Request("https://example.com/auth/google", { method: "POST" }), {} as RequestContext)
+                const post = await POST(new Request("https://example.com/auth/google", { method: "POST" }))
                 expect(post.status).toBe(200)
                 expect(post.ok).toBeTruthy()
                 expect(post.headers.get("x-powered-by")).toBe("@aura-stack")
@@ -286,7 +271,7 @@ describe("createRouter", () => {
             const { GET } = router
 
             test("Block request without authorization header", async () => {
-                const get = await GET(new Request("https://example.com/session", { method: "GET" }), {} as RequestContext)
+                const get = await GET(new Request("https://example.com/session", { method: "GET" }))
                 expect(get).toBeInstanceOf(Response)
                 expect(get.status).toBe(403)
                 expect(await get.json()).toEqual({ message: "Forbidden" })
