@@ -12,7 +12,8 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "clean:cts": "rm -rf dist/*.cts"
   },
   "files": [
     "dist"

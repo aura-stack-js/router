@@ -1,8 +1,8 @@
 import type { RouteHandler, HTTPMethod, RoutePattern } from "./types.js"
 
-const supportedMethods: HTTPMethod[] = ["GET", "POST", "DELETE", "PUT", "PATCH"]
+const supportedMethods = new Set<HTTPMethod>(["GET", "POST", "DELETE", "PUT", "PATCH"])
 
-const supportedBodyMethods: HTTPMethod[] = ["POST", "PUT", "PATCH"]
+const supportedBodyMethods = new Set<HTTPMethod>(["POST", "PUT", "PATCH"])
 
 /**
  * Checks if the provided method is a supported HTTP method.
@@ -11,7 +11,7 @@ const supportedBodyMethods: HTTPMethod[] = ["POST", "PUT", "PATCH"]
  * @returns True if the method is supported, false otherwise.
  */
 export const isSupportedMethod = (method: string): method is HTTPMethod => {
-    return supportedMethods.includes(method as HTTPMethod)
+    return supportedMethods.has(method as HTTPMethod)
 }
 
 /**
@@ -20,7 +20,7 @@ export const isSupportedMethod = (method: string): method is HTTPMethod => {
  * @returns True if the method can include a body, false otherwise.
  */
 export const isSupportedBodyMethod = (method: string): method is HTTPMethod => {
-    return supportedBodyMethods.includes(method as HTTPMethod)
+    return supportedBodyMethods.has(method as HTTPMethod)
 }
 
 /**
