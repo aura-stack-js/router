@@ -187,9 +187,9 @@ const endpoint = createEndpoint(
 
 const router = createRouter([endpoint], {
   middlewares: [
-    async (request, ctx) => {
+    async (request) => {
       console.log("1. Global middleware")
-      return ctx
+      return request
     },
   ],
 })
