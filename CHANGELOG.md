@@ -9,13 +9,9 @@ Per-package version history is maintained inside each package’s own `CHANGELOG
 
 ## [Unreleased]
 
-### Added
-
 ### Changed
 
-### Removed
-
-### Fixed
+- Router now only exposes HTTP handlers that are defined via `createRouter`. Undefined HTTP handlers are not exposed, preventing TypeScript errors when accessing non-existent methods. [#8](https://github.com/aura-stack-js/router/pull/8)
 
 ---
 

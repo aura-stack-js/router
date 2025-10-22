@@ -44,11 +44,11 @@ describe("getRouteParams", () => {
         },
     ]
 
-    testCases.forEach(({ description, route, path, expected }) => {
+    for (const { description, route, path, expected } of testCases) {
         test.concurrent(description, ({ expect }) => {
             expect(getRouteParams(route as RoutePattern, path)).toEqual(expected)
         })
-    })
+    }
 
     describe("With invalid route or path", () => {
         const testCases = [
@@ -72,11 +72,11 @@ describe("getRouteParams", () => {
             },
         ]
 
-        testCases.forEach(({ description, route, path, expected }) => {
+        for (const { description, route, path, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
                 expect(() => getRouteParams(route as RoutePattern, path)).toThrowError(expected)
             })
-        })
+        }
     })
 })
 
@@ -109,7 +109,7 @@ describe("getSearchParams", () => {
             },
         ]
 
-        testCases.forEach(({ description, url, config, expected }) => {
+        for (const { description, url, config, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
                 const searchParams = getSearchParams(url, config)
                 expect(searchParams instanceof URLSearchParams).toBe(true)
@@ -118,7 +118,7 @@ describe("getSearchParams", () => {
                 expect(searchParams).toEqual(new URLSearchParams(expected as Record<string, string>))
                 expect(searchParams).not.toEqual(expected)
             })
-        })
+        }
 
         test("Check return type is URLSearchParams", () => {
             const withoutParams = {
@@ -210,7 +210,7 @@ describe("getSearchParams", () => {
                 expected: {},
             },
         ]
-        testCases.forEach(({ description, url, config, expected }) => {
+        for (const { description, url, config, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
                 const searchParams = getSearchParams(url, config)
                 expect(searchParams instanceof Object).toBe(true)
@@ -219,7 +219,7 @@ describe("getSearchParams", () => {
                 expect(searchParams).toEqual(expected)
                 expect(searchParams).not.toBeInstanceOf(URLSearchParams)
             })
-        })
+        }
     })
 
     describe("With invalid parameters", () => {
@@ -262,11 +262,11 @@ describe("getSearchParams", () => {
             },
         ]
 
-        testCases.forEach(({ description, url, config, expected }) => {
+        for (const { description, url, config, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
                 expect(() => getSearchParams(url, config)).toThrowError(expected)
             })
-        })
+        }
 
         describe("Check return type is Object", () => {
             test("No search params", () => {
@@ -360,7 +360,7 @@ describe("getHeaders", () => {
             }),
         },
     ]
-    testCases.forEach(({ description, request, expected }) => {
+    for (const { description, request, expected } of testCases) {
         test.concurrent(description, ({ expect }) => {
             const headers = getHeaders(request)
             expect(headers instanceof Headers).toBe(true)
@@ -368,7 +368,7 @@ describe("getHeaders", () => {
             expect(headers).toBeInstanceOf(Headers)
             expect(headers).toEqual(expected)
         })
-    })
+    }
 })
 
 describe("getBody", () => {
@@ -437,13 +437,13 @@ describe("getBody", () => {
             },
         ]
 
-        testCases.forEach(({ description, request, config, expected }) => {
+        for (const { description, request, config, expected } of testCases) {
             test.concurrent(description, async ({ expect }) => {
                 const body = await getBody(request, config)
                 expect(body).toBeDefined()
                 expect(body).toEqual(expected)
             })
-        })
+        }
     })
 
     describe("Invalid body", () => {
@@ -489,10 +489,10 @@ describe("getBody", () => {
             },
         ]
 
-        testCases.forEach(({ description, request, config, expected }) => {
+        for (const { description, request, config, expected } of testCases) {
             test.concurrent(description, async ({ expect }) => {
                 await expect(getBody(request, config)).rejects.toThrowError(expected)
             })
-        })
+        }
     })
 })

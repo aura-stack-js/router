@@ -1,5 +1,5 @@
 import z from "zod"
-import { describe, expect, test } from "vitest"
+import { describe, expect, expectTypeOf, test } from "vitest"
 import { createRouter } from "../src/router.js"
 import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
 
@@ -175,17 +175,24 @@ describe("createRouter", () => {
     describe("Invalid endpoints", () => {
         test("No HTTP handlers defined", async () => {
             const router = createRouter([])
-            const post = await (router as any).POST(new Request("https://example.com/auth/callback", { method: "POST" }))
-            expect(post).toBeInstanceOf(Response)
-            expect(post.status).toBe(404)
-            expect(post.ok).toBeFalsy()
-            expect(await post.json()).toEqual({ message: "Not Found" })
+            const cast = router as any
+            expect(cast).not.toHaveProperty("POST")
+            expect(cast).not.toHaveProperty("PUT")
+        })
 
-            const put = await (router as any).PUT(new Request("https://example.com/auth/callback", { method: "PUT" }))
-            expect(put).toBeInstanceOf(Response)
-            expect(put.status).toBe(404)
-            expect(put.ok).toBeFalsy()
-            expect(await put.json()).toEqual({ message: "Not Found" })
+        test("No HTTP handlers defined but accessing GET", async () => {
+            const get = createEndpoint("GET", "/session", async () => {
+                return Response.json({ message: "Get user session" }, { status: 200 })
+            })
+            const router = createRouter([get])
+            const cast = router as any
+            expect(cast).not.toHaveProperty("POST")
+            expect(cast).not.toHaveProperty("PUT")
+            expect(cast.GET).toBeInstanceOf(Function)
+            expect(router.GET).toBeInstanceOf(Function)
+            expectTypeOf(router).toHaveProperty("GET")
+            expectTypeOf(router).not.toHaveProperty("POST")
+            expectTypeOf(router).not.toHaveProperty("PUT")
         })
     })
 

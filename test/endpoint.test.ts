@@ -19,20 +19,20 @@ describe("createRoutePattern", () => {
         {
             description: "Converts route with one parameter to regex",
             route: "/users/:userId/books",
-            expected: /^\/users\/([^\/]+)\/books$/,
+            expected: /^\/users\/([^\\/]+)\/books$/,
         },
         {
             description: "Converts route with two parameters to regex",
             route: "/users/:userId/books/:bookId",
-            expected: /^\/users\/([^\/]+)\/books\/([^\/]+)$/,
+            expected: /^\/users\/([^\\/]+)\/books\/([^\\/]+)$/,
         },
     ]
-    testCases.forEach(({ description, route, expected }) => {
+    for (const { description, route, expected } of testCases) {
         test.concurrent(description, ({ expect }) => {
             const regex = createRoutePattern(route as RoutePattern)
             expect(regex).toEqual(expected)
         })
-    })
+    }
 })
 
 describe("createEndpoint", () => {
@@ -70,13 +70,13 @@ describe("createEndpoint", () => {
             },
         ]
 
-        testCases.forEach(({ description, method, route, expected }) => {
+        for (const { description, method, route, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
                 const handler: any = () => {}
                 const endpoint = createEndpoint(method as HTTPMethod, route as Lowercase<RoutePattern>, handler)
                 expect(endpoint).toEqual({ ...expected, handler })
             })
-        })
+        }
     })
 
     describe("With invalid configuration", () => {
@@ -89,14 +89,14 @@ describe("createEndpoint", () => {
             },
         ]
 
-        testCases.forEach(({ description, method, route, expected }) => {
+        for (const { description, method, route, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
                 const handler: any = () => {}
                 expect(() => createEndpoint(method as HTTPMethod, route as Lowercase<RoutePattern>, handler, {})).toThrowError(
                     expected
                 )
             })
-        })
+        }
     })
 
     describe("With schemas", () => {

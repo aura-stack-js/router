@@ -18,15 +18,14 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
     config: RouterConfig = {}
 ): GetHttpHandlers<Endpoints> => {
     const server = {} as GetHttpHandlers<Endpoints>
-    const groups: Record<HTTPMethod, RouteEndpoint[]> = {
-        GET: [],
-        POST: [],
-        DELETE: [],
-        PUT: [],
-        PATCH: [],
+    const groups = new Map<HTTPMethod, RouteEndpoint[]>()
+    for (const endpoint of endpoints) {
+        if (!groups.has(endpoint.method)) {
+            groups.set(endpoint.method, [])
+        }
+        groups.get(endpoint.method)?.push(endpoint)
     }
-    endpoints.forEach((endpoint) => groups[endpoint.method].push(endpoint))
-    for (const method in groups) {
+    for (const method of groups.keys()) {
         server[method as keyof typeof server] = async (request: Request) => {
             try {
                 const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
@@ -35,7 +34,7 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
                 }
                 const url = new URL(globalRequest.url)
                 const pathname = url.pathname
-                const endpoint = groups[method as HTTPMethod].find((endpoint) => {
+                const endpoint = groups.get(method)?.find((endpoint) => {
                     const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
                     const regex = createRoutePattern(withBasePath as RoutePattern)
                     return regex.test(pathname)
