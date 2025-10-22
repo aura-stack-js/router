@@ -45,15 +45,15 @@ const response = await GET(request, {})
 
 ## Documentation
 
-- **[Getting Started Guide](./docs/getting-started.md)** - Detailed installation and setup
-- **[Core Concepts](./docs/core-concepts.md)** - Learn the fundamentals
-- **[API Reference](./docs/api-reference.md)** - Complete API documentation
-  - [`createEndpoint`](./docs/create-endpoint.md) - Define endpoints
-  - [`createEndpointConfig`](./docs/create-endpoint.md#using-createendpointconfig) - Configure endpoints
-  - [`createRouter`](./docs/create-router.md) - Build routers
-- **[Validation](./docs/validation.md)** - Schema validation with Zod
-- **[Middlewares](./docs/middlewares.md)** - Global and endpoint middlewares
-- **[Examples](./docs/examples.md)** - Real-world usage patterns
+- [Getting Started Guide](./web/src/content/docs/getting-started.mdx) - Installation and setup
+- [Core Concepts](./web/src/content/docs/core-concepts.mdx) - Learn the fundamentals
+- [API Reference](/web/src/content/docs) - Coming soon
+  - [`createEndpoint`](./web/src/content/docs/create-endpoint.mdx) - Define endpoints
+  - [`createEndpointConfig`](./web/src/content/docs/create-endpoint.mdx#using-createendpointconfig) - Configure endpoints
+  - [`createRouter`](./web/src/content/docs/create-router.mdx) - Build routers
+- [Validation](./web/src/content/docs/validation.mdx) - Schema validation with Zod
+- [Middlewares](./web/src/content/docs/middlewares.mdx) - Global and endpoint middlewares
+- [Examples](/web/src/content/docs) - Coming soon
 
 ## Basic Example
 

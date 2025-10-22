@@ -5,6 +5,7 @@
   "description": "A lightweight TypeScript library for building, managing, and validating API routes and endpoints in Node.js applications.",
   "scripts": {
     "dev": "tsup --watch",
+    "dev:docs": "pnpm --filter docs dev",
     "build": "tsup",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -48,3 +48,12 @@ playwright/.cache/
 out/
 storybook-static
 storybook-static-*
+
+# Nextjs
+.next
+**/.next/
+.vercel/
+.vercel/**
+
+# Fumadocs
+.source

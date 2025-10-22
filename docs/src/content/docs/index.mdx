@@ -1,0 +1,277 @@
+---
+title: Quick Start
+description: Fundamental concepts of @aura-stack/router — endpoints, routes, routers, context, responses, and typing.
+---
+
+# What is `@aura-stack/router`
+
+Welcome to `@aura-stack/router` package. It is a modern, TypeScript-first router and endpoint definition library for TypeScript backends that provides supported for `Next.js`, `Nuxt`, `Sveltekit` and more.
+Build fully-typed APIs with declarative endpoints, automatic parameter inference, and first-class middleware support — all returning native Response objects for seamless compatibility with the Fetch API and modern API to be supported by the major of professional TypeScript applications.
+
+<Callout type="info">
+  All of the package is built-in in TypeScript providing a strong type-safe and type-inference for a better experience coding.
+</Callout>
+
+## Getting Started
+
+This guide will help you install and set up `@aura-stack/router` in your TypeScript project and understanding the fundamental concepts of `@aura-stack/router` will help you build type-safe APIs efficiently.
+
+## Installation
+
+Install the package and its peer dependency:
+
+```npm
+npm install @aura-stack/router zod
+```
+
+> `zod` is a peer dependency required for schema validation features configured in `createEndpoint` declarative function.
+
+## Endpoints
+
+Endpoints are the building blocks of your API. Each endpoint represents a single route with a specific HTTP method.
+
+### Creating Endpoints
+
+Use `createEndpoint` to define an endpoint:
+
+```ts twoslash lineNumbers
+import { createEndpoint } from "@aura-stack/router"
+
+const getUser = createEndpoint(
+  "GET", // HTTP method
+  "/users/:userId",
+  async (request, ctx) => {
+    const { userId } = ctx.params
+    return Response.json({ id: userId, name: "John" })
+  }
+)
+```
+
+### Supported HTTP Methods
+
+Currently is supoprted five HTTP methods, based on the recommended and suggested HTTP methods to be used in an clean API Restful.
+
+- `GET` - Retrieve resources
+- `POST` - Create resources
+- `PUT` - Replace resources
+- `PATCH` - Update resources
+- `DELETE` - Delete resources
+
+## Route Patterns
+
+Routes use a simple pattern syntax for dynamic segments:
+
+### Static Routes
+
+```ts lineNumbers
+const endpoint = createEndpoint("GET", "/about", handler)
+```
+
+### Dynamic Parameters
+
+The dynamic parameters are automatically extracted from the route definition with the `:paramName` and are passed to the context of the handlers to be acceded `ctx.params`
+
+```ts twoslash lineNumbers
+import { createEndpoint } from "@aura-stack/router"
+
+/*
+  Single parameter
+*/
+const getUser = createEndpoint("GET", "/users/:userId", async (_, ctx) => {
+  return Response.json({ message: "" })
+})
+
+/*
+  Multiple parameters
+*/
+const getComment = createEndpoint("GET", "/posts/:postId/comments/:commentId", async (_, ctx) => {
+  return Response.json({})
+})
+```
+
+## Request Context
+
+Every handler receives a `RequestContext` object with parsed request data:
+
+```ts lineNumbers
+interface RequestContext<RouteParams, Config> {
+  /* Route parameters */
+  params: RouteParams
+  /* Query parameters */
+  searchParams: URLSearchParams | ParsedObject
+  /* Request body */
+  body: unknown | ParsedObject
+  /* HTTP headers */
+  headers: Headers
+}
+```
+
+### Accessing Context
+
+```ts lineNumbers
+const handler = async (request, ctx) => {
+  /* Route parameters */
+  const { userId } = ctx.params
+
+  /* Query parameters */
+  const page = ctx.searchParams.get("page")
+
+  /* Request body */
+  const data = ctx.body
+
+  /* Headers */
+  const auth = ctx.headers.get("authorization")
+
+  return Response.json({ userId, page, data })
+}
+```
+
+## Routers
+
+Routers group endpoints and provide type-safe HTTP handlers.
+
+### Creating Routers
+
+```ts lineNumbers
+import { createRouter } from "@aura-stack/router"
+
+const router = createRouter([endpoint1, endpoint2, endpoint3])
+```
+
+### Type-Safe Method Extraction
+
+Only methods used in your endpoints are available:
+
+```ts twoslash lineNumbers
+import { createEndpoint, createRouter } from "@aura-stack/router"
+
+const getUser = createEndpoint("GET", "/users/:id", async () => {
+  return Response.json({})
+})
+const createUser = createEndpoint("POST", "/users", async () => {
+  return Response.json({})
+})
+
+const { GET, POST } = createRouter([getUser, createUser])
+
+// @errors: 2339
+const { DELETE } = createRouter([getUser, createUser])
+```
+
+## Router Configuration
+
+### Base Path
+
+Prefix all routes with a base path:
+
+```ts lineNumbers
+const router = createRouter([...endpoints], {
+  basePath: "/api/v1",
+})
+
+/*
+  Routes become:
+    - /api/v1/users
+    - /api/v1/posts
+*/
+```
+
+### Global Middlewares
+
+Apply middlewares to all endpoints:
+
+```ts lineNumbers
+const router = createRouter([...endpoints], {
+  middlewares: [loggingMiddleware, authMiddleware],
+})
+```
+
+## Response Handling
+
+All handlers must return a standard `Response` object:
+
+### JSON Responses
+
+```ts lineNumbers
+return Response.json({ data: "value" })
+return Response.json({ error: "Not found" }, { status: 404 })
+```
+
+### Text Responses
+
+```ts lineNumbers
+return new Response("Hello, World!")
+return new Response("Created", { status: 201 })
+```
+
+### Redirects
+
+```ts lineNumbers
+return Response.redirect("https://example.com")
+return Response.redirect("/login", 302)
+```
+
+### Custom Headers
+
+```ts lineNumbers
+return Response.json(
+  { data: "value" },
+  {
+    headers: {
+      "Cache-Control": "max-age=3600",
+      "X-Custom-Header": "value",
+    },
+  }
+)
+```
+
+## Type Inference
+
+The library provides automatic type inference throughout:
+
+### Route Parameters
+
+```ts twoslash lineNumbers
+import { createEndpoint } from "@aura-stack/router"
+
+const endpoint = createEndpoint("GET", "/users/:userId/posts/:postId", async (request, ctx) => {
+  const { userId, postId } = ctx.params
+  return Response.json({})
+})
+```
+
+### Schema-Based Typing
+
+When using Zod schemas, body and searchParams are fully typed:
+
+```ts twoslash lineNumbers
+import { z } from "zod"
+import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig({
+  schemas: {
+    body: z.object({
+      email: z.string().email(),
+      age: z.number(),
+    }),
+    searchParams: z.object({
+      page: z.string().optional(),
+    }),
+  },
+})
+
+const endpoint = createEndpoint(
+  "POST",
+  "/users",
+  async (request, ctx) => {
+    const { email, age } = ctx.body
+    return Response.json({})
+  },
+  config
+)
+```
+
+## Next Steps
+
+- Learn about [Validation with Zod](./validation)
+- Understand [Middlewares](./middlewares)

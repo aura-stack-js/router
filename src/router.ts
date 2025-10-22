@@ -1,7 +1,7 @@
 import type { HTTPMethod, RequestContext, RouteEndpoint, RoutePattern, RouterConfig, GetHttpHandlers } from "./types.js"
 import { createRoutePattern } from "./endpoint.js"
 import { getBody, getHeaders, getRouteParams, getSearchParams } from "./context.js"
-import { executeGlobalMiddlewares, executeMiddlewares } from "./middleware.js"
+import { executeGlobalMiddlewares, executeMiddlewares } from "./middlewares.js"
 import { AuraStackRouterError } from "./error.js"
 
 /**
