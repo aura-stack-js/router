@@ -34,7 +34,7 @@ Endpoints are the building blocks of your API. Each endpoint represents a single
 
 Use `createEndpoint` to define an endpoint:
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { createEndpoint } from "@aura-stack/router"
 
 const getUser = createEndpoint(
@@ -71,7 +71,7 @@ const endpoint = createEndpoint("GET", "/about", handler)
 
 The dynamic parameters are automatically extracted from the route definition with the `:paramName` and are passed to the context of the handlers to be acceded `ctx.params`
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { createEndpoint } from "@aura-stack/router"
 
 /*
@@ -142,7 +142,7 @@ const router = createRouter([endpoint1, endpoint2, endpoint3])
 
 Only methods used in your endpoints are available:
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { createEndpoint, createRouter } from "@aura-stack/router"
 
 const getUser = createEndpoint("GET", "/users/:id", async () => {
@@ -231,7 +231,7 @@ The library provides automatic type inference throughout:
 
 ### Route Parameters
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { createEndpoint } from "@aura-stack/router"
 
 const endpoint = createEndpoint("GET", "/users/:userId/posts/:postId", async (request, ctx) => {
@@ -244,7 +244,7 @@ const endpoint = createEndpoint("GET", "/users/:userId/posts/:postId", async (re
 
 When using Zod schemas, body and searchParams are fully typed:
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { z } from "zod"
 import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
 
@@ -273,5 +273,4 @@ const endpoint = createEndpoint(
 
 ## Next Steps
 
-- Learn about [Validation with Zod](./validation)
 - Understand [Middlewares](./middlewares)

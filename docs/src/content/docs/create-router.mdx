@@ -39,7 +39,7 @@ interface RouterConfig {
 
 ## Basic Usage
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { createRouter, createEndpoint } from "@aura-stack/router"
 
 const getUsers = createEndpoint("GET", "/users", async (request, ctx) => {
@@ -60,7 +60,7 @@ const { GET, POST } = router
 
 The router provides powerful type inference based on your defined endpoints. Only HTTP methods actually used in your endpoints are available:
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { createRouter, createEndpoint } from "@aura-stack/router"
 
 const oauth = createEndpoint("GET", "/auth/signin/:provider", async (request, ctx) => {

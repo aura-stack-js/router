@@ -1,0 +1,299 @@
+---
+title: Schemas
+description: Desc
+---
+
+# Schema Validations
+
+Schema validation using Zod ensures type-safe request handling with automatic parsing and error handling.
+
+## Overview
+
+`@aura-stack/router` integrates seamlessly with Zod to validate:
+
+- Request bodies
+- Query parameters (search params)
+
+When validation fails, an error is thrown automatically.
+
+## Query Parameter Validation
+
+### Basic Query Validation
+
+```ts lineNumbers
+import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
+import { z } from "zod"
+
+const searchConfig = createEndpointConfig({
+  schemas: {
+    searchParams: z.object({
+      q: z.string().min(1),
+      page: z.coerce.number().int().positive().default(1),
+    }),
+  },
+})
+
+const searchUsers = createEndpoint(
+  "GET",
+  "/users/search",
+  async (request, ctx) => {
+    const { q, page } = ctx.searchParams
+    return Response.json({ query: q, page, results: [] })
+  },
+  searchConfig
+)
+```
+
+### Advanced Query Validation
+
+```ts lineNumbers
+const advancedSearchConfig = createEndpointConfig({
+  schemas: {
+    searchParams: z.object({
+      q: z.string().min(3).max(100),
+      category: z.enum(["tech", "science", "arts"]).optional(),
+      page: z.coerce.number().int().min(1).default(1),
+      limit: z.coerce.number().int().min(1).max(100).default(20),
+      sortBy: z.enum(["date", "relevance", "popularity"]).default("relevance"),
+      sortOrder: z.enum(["asc", "desc"]).default("desc"),
+    }),
+  },
+})
+```
+
+## Request Body Validation
+
+### Basic Body Validation
+
+```ts lineNumbers
+const createUserConfig = createEndpointConfig({
+  schemas: {
+    body: z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+    }),
+  },
+})
+
+const createUser = createEndpoint(
+  "POST",
+  "/users",
+  async (request, ctx) => {
+    const { name, email } = ctx.body
+
+    return Response.json({ id: "new-id", name, email }, { status: 201 })
+  },
+  createUserConfig
+)
+```
+
+### Complex Body Validation
+
+```ts lineNumbers
+const updateProfileConfig = createEndpointConfig({
+  schemas: {
+    body: z.object({
+      profile: z.object({
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+        bio: z.string().max(500).optional(),
+      }),
+      settings: z.object({
+        theme: z.enum(["light", "dark"]).default("light"),
+        notifications: z.boolean().default(true),
+        language: z.string().length(2).default("en"),
+      }),
+      tags: z.array(z.string()).min(1).max(10),
+    }),
+  },
+})
+
+const updateProfile = createEndpoint(
+  "PATCH",
+  "/profile",
+  async (request, ctx) => {
+    const { profile, settings, tags } = ctx.body
+    return Response.json({ updated: true })
+  },
+  updateProfileConfig
+)
+```
+
+## Combined Validation
+
+Validate both body and query parameters in the same endpoint:
+
+```ts
+const createPostConfig = createEndpointConfig({
+  schemas: {
+    body: z.object({
+      title: z.string().min(1).max(200),
+      content: z.string().min(1),
+      tags: z.array(z.string()).optional(),
+    }),
+    searchParams: z.object({
+      publish: z.enum(["true", "false"]).default("false"),
+      notify: z.enum(["true", "false"]).default("true"),
+    }),
+  },
+})
+
+const createPost = createEndpoint(
+  "POST",
+  "/posts",
+  async (request, ctx) => {
+    const { title, content, tags } = ctx.body
+    const { publish, notify } = ctx.searchParams
+
+    return Response.json(
+      {
+        id: "new-post",
+        title,
+        content,
+        tags,
+        published: publish === "true",
+        notified: notify === "true",
+      },
+      { status: 201 }
+    )
+  },
+  createPostConfig
+)
+```
+
+## Validation with Route Parameters
+
+Combine route params with validated schemas:
+
+```ts
+const updateUserConfig = createEndpointConfig("/users/:userId", {
+  schemas: {
+    body: z.object({
+      name: z.string().optional(),
+      email: z.string().email().optional(),
+    }),
+  },
+  middlewares: [
+    async (request, ctx) => {
+      const { userId } = ctx.params
+      console.log(`Updating user ${userId}`)
+      return ctx
+    },
+  ],
+})
+
+const updateUser = createEndpoint(
+  "PATCH",
+  "/users/:userId",
+  async (request, ctx) => {
+    const { userId } = ctx.params
+    const updates = ctx.body // Typed based on schema
+
+    return Response.json({ id: userId, ...updates })
+  },
+  updateUserConfig
+)
+```
+
+## Error Handling
+
+Validation errors are automatically thrown with descriptive messages:
+
+### Query Parameter Errors
+
+```ts
+// Request: GET /search?page=invalid
+// Error: Invalid search parameters: Expected number, received string
+```
+
+### Body Validation Errors
+
+```ts
+// Request: POST /users with { email: "invalid" }
+// Error: Invalid request body
+```
+
+### Custom Error Handling
+
+```ts
+const { POST } = createRouter([createUser])
+
+async function handleRequest(request: Request) {
+  try {
+    return await POST(request, {})
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("Invalid")) {
+        return Response.json(
+          {
+            error: "Validation failed",
+            message: error.message,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    return Response.json({ error: "Internal Server Error" }, { status: 500 })
+  }
+}
+```
+
+## Best Practices
+
+### 1. Use Descriptive Schemas
+
+```ts
+// ❌ Too loose
+z.string()
+
+// ✅ Specific validation
+z.string().email().max(255)
+```
+
+### 2. Provide Default Values
+
+```ts
+const config = createEndpointConfig({
+  schemas: {
+    searchParams: z.object({
+      page: z.coerce.number().default(1),
+      limit: z.coerce.number().default(20),
+      sort: z.enum(["asc", "desc"]).default("asc"),
+    }),
+  },
+})
+```
+
+### 3. Use Coercion for Query Params
+
+Query parameters are always strings, use coercion:
+
+```ts
+z.object({
+  page: z.coerce.number(), // Converts "10" to 10
+  active: z.coerce.boolean(), // Converts "true" to true
+})
+```
+
+### 4. Reuse Schemas
+
+```ts
+const userSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+})
+
+const createConfig = createEndpointConfig({
+  schemas: { body: userSchema },
+})
+
+const updateConfig = createEndpointConfig({
+  schemas: { body: userSchema.partial() },
+})
+```
+
+## See Also
+
+- [createEndpoint](./create-endpoint)
+- [Middlewares](./middlewares)

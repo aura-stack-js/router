@@ -46,7 +46,7 @@ const endpoint = createEndpoint("GET", "/protected", handler, config)
 
 ### Authentication Middleware
 
-```ts twoslash lineNumbers
+```ts lineNumbers
 import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
 
 const verifyToken = (token: string) => {
