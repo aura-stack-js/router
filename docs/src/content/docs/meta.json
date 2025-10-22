@@ -2,5 +2,5 @@
   "title": "aura-stack/router",
   "description": "A modern, TypeScript-first router and endpoint definition library for Node.js",
   "root": true,
-  "pages": ["---Introduction---", "index", "validation", "middlewares", "---Core---", "create-router", "create-endpoint"]
+  "pages": ["---Introduction---", "index", "schemas", "middlewares", "---Core---", "create-router", "create-endpoint"]
 }
