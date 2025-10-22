@@ -1,0 +1,225 @@
+---
+title: createRouter
+description: Create routers to group endpoints and expose type-safe HTTP method handlers.
+---
+
+# `createRouter`
+
+Creates the main router that groups your endpoints and provides type-safe HTTP method handlers. The router automatically dispatches incoming requests to the correct endpoint based on the HTTP method and URL pattern.
+
+## Signature
+
+```ts lineNumbers
+import type { RouteEndpoint, RouterConfig, GetHttpHandlers } from "@aura-stack/router/types"
+
+function createRouter<Endpoints extends RouteEndpoint[]>(endpoints: Endpoints, config?: RouterConfig): GetHttpHandlers<Endpoints>
+```
+
+## Parameters
+
+| Parameter   | Type              | Description                                                 |
+| ----------- | ----------------- | ----------------------------------------------------------- |
+| `endpoints` | `RouteEndpoint[]` | Array of endpoints created with `createEndpoint`            |
+| `config`    | `RouterConfig`    | Optional configuration for base path and global middlewares |
+
+### RouterConfig
+
+```ts lineNumbers
+interface RouterConfig {
+  /*
+    Prefix for all routes
+  */
+  basePath?: string
+  /*
+    Global middlewares
+  */
+  middlewares?: MiddlewareFunction[]
+}
+```
+
+## Basic Usage
+
+```ts lineNumbers
+import { createRouter, createEndpoint } from "@aura-stack/router"
+
+const getUsers = createEndpoint("GET", "/users", async (request, ctx) => {
+  return Response.json({ users: [] })
+})
+
+const createUser = createEndpoint("POST", "/users", async (request, ctx) => {
+  return Response.json({ id: "new-user" }, { status: 201 })
+})
+
+const router = createRouter([getUsers, createUser])
+
+// Use the router handlers
+const { GET, POST } = router
+```
+
+## Type Inference
+
+The router provides powerful type inference based on your defined endpoints. Only HTTP methods actually used in your endpoints are available:
+
+```ts lineNumbers
+import { createRouter, createEndpoint } from "@aura-stack/router"
+
+const oauth = createEndpoint("GET", "/auth/signin/:provider", async (request, ctx) => {
+  const { provider } = ctx.params
+  return Response.json({ provider })
+})
+
+const signIn = createEndpoint("POST", "/auth/credentials", async (request, ctx) => {
+  return Response.json({ token: "jwt-token" })
+})
+
+const { GET, POST } = createRouter([oauth, signIn])
+
+// @errors: 2339
+const { DELETE } = createRouter([oauth, signIn])
+```
+
+## Configuration Options
+
+### Base Path
+
+Add a prefix to all routes in the router. This is useful for API versioning or namespacing:
+
+```ts lineNumbers
+const router = createRouter([getUsers, createUser], {
+  basePath: "/api/v1",
+})
+
+/* 
+  Routes become:
+    - GET  /api/v1/users
+    - POST /api/v1/users
+*/
+```
+
+> The `basePath` is prepended to all endpoint routes. When making requests, include the full path including the base.
+
+**Example with different base paths:**
+
+```ts lineNumbers
+/* 
+  Public API
+*/
+const publicRouter = createRouter([...publicEndpoints], {
+  basePath: "/api/v1/public",
+})
+
+/*
+ Admin API
+*/
+const adminRouter = createRouter([...adminEndpoints], {
+  basePath: "/api/v1/admin",
+})
+
+/*
+ Internal API
+*/
+const internalRouter = createRouter([...internalEndpoints], {
+  basePath: "/api/v1/internal",
+})
+```
+
+### Global Middlewares
+
+Global middlewares run before any endpoint-specific middleware and the route handler. They're executed for every request that matches an endpoint:
+
+```ts lineNumbers
+import { createRouter, createEndpoint } from "@aura-stack/router"
+
+const endpoints = [createEndpoint("GET", "/test", async () => Response.json({}))]
+
+const auditMiddleware = async (request, ctx) => {
+  const timestamp = new Date().toISOString()
+  console.log(`[${timestamp}] ${request.method} ${request.url}`)
+
+  /*
+    Add request ID to all responses
+  */
+  ctx.headers.set("x-request-id", crypto.randomUUID())
+
+  return ctx
+}
+
+const corsMiddleware = async (request, ctx) => {
+  ctx.headers.set("Access-Control-Allow-Origin", "*")
+  ctx.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+  return ctx
+}
+
+const router = createRouter([...endpoints], {
+  middlewares: [auditMiddleware, corsMiddleware],
+})
+```
+
+## Middleware Execution Order
+
+Middlewares execute in a specific order:
+
+1. **Global middlewares** (from `createRouter` config)
+2. **Endpoint middlewares** (from `createEndpointConfig`)
+3. **Route handler** (the main endpoint function)
+
+```ts lineNumbers
+import { createRouter, createEndpoint, createEndpointConfig } from "@aura-stack/router"
+
+const endpointConfig = createEndpointConfig({
+  middlewares: [
+    async (request, ctx) => {
+      console.log("2. Endpoint middleware")
+      return ctx
+    },
+  ],
+})
+
+const endpoint = createEndpoint(
+  "GET",
+  "/test",
+  async (request, ctx) => {
+    console.log("3. Route handler")
+    return Response.json({ ok: true })
+  },
+  endpointConfig
+)
+
+const router = createRouter([endpoint], {
+  middlewares: [
+    async (request) => {
+      console.log("1. Global middleware")
+      return request
+    },
+  ],
+})
+```
+
+## Route Matching
+
+The router matches requests using this priority:
+
+1. **Method matching** - Only endpoints with the correct HTTP method
+2. **Pattern matching** - Routes matched via regex patterns
+3. **First match wins** - Order matters for overlapping routes
+
+```ts lineNumbers
+/* 
+ Specific routes before dynamic ones
+*/
+const router = createRouter([createEndpoint("GET", "/users/me", handler), createEndpoint("GET", "/users/:id", handler)])
+```
+
+## 404 Responses
+
+When no endpoint matches, the router returns:
+
+```json
+{ "message": "Not Found" }
+```
+
+Customize 404 handling in your server layer if needed.
+
+## See Also
+
+- [`createEndpoint`](./create-endpoint) - Define individual endpoints

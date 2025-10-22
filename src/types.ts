@@ -6,7 +6,7 @@ import { type ZodObject, z } from "zod"
  * const getUser:RoutePattern = "/users/:userId"
  * const getPostsComments:RoutePattern = "/posts/:postId/comments/:commentId"
  */
-export type RoutePattern = `/${string}`
+export type RoutePattern = `/${string}` | `/${string}/:${string}`
 
 /**
  * HTTP methods supported by the router.

@@ -36,7 +36,7 @@ export const createRoutePattern = (route: RoutePattern): RegExp => {
  */
 export const createEndpoint = <
     const Method extends Uppercase<HTTPMethod>,
-    const Route extends Lowercase<RoutePattern>,
+    const Route extends RoutePattern,
     const Schemas extends EndpointSchemas,
 >(
     method: Method,

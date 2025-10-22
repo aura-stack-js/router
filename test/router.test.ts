@@ -2,7 +2,6 @@ import z from "zod"
 import { describe, expect, test } from "vitest"
 import { createRouter } from "../src/router.js"
 import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
-import type { RequestContext } from "../src/types.js"
 
 describe("createRouter", () => {
     describe("OAuth endpoints", () => {

@@ -1,0 +1,180 @@
+---
+title: Middlewares
+description: Global and endpoint middlewares for cross-cutting concerns like auth, logging, rate limiting, and more.
+---
+
+# Middlewares
+
+Middlewares are functions that execute before your route handlers, allowing you to add cross-cutting concerns like authentication, logging, and request modification.
+
+## Overview
+
+Middlewares in `@aura-stack/router` can be applied at two levels:
+
+1. **Global** - Applied to all endpoints in a router
+2. **Endpoint-specific** - Applied to individual endpoints
+
+## Middleware Function Signature
+
+```ts lineNumbers
+type MiddlewareFunction = (request: Request, ctx: RequestContext) => Promise<RequestContext>
+```
+
+Middlewares receive the request and context, and must return the (possibly modified) context.
+
+## Endpoint Middlewares
+
+Applied to specific endpoints using `createEndpointConfig`:
+
+### Basic Example
+
+```ts lineNumbers
+import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
+
+const config = createEndpointConfig({
+  middlewares: [
+    async (request, ctx) => {
+      console.log(`Request to ${request.url}`)
+      return ctx
+    },
+  ],
+})
+
+const handler = async () => Response.json({})
+const endpoint = createEndpoint("GET", "/protected", handler, config)
+```
+
+### Authentication Middleware
+
+```ts lineNumbers
+import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
+
+const verifyToken = (token: string) => {
+  /* Add logic */
+  return token
+}
+
+const authConfig = createEndpointConfig({
+  middlewares: [
+    async (request, ctx) => {
+      const token = request.headers.get("authorization")
+
+      if (!token || !token.startsWith("Bearer ")) {
+        throw new Error("Unauthorized")
+      }
+
+      /*
+       Verify token (simplified)
+      */
+      const userId = verifyToken(token.slice(7))
+
+      /*
+        Add user info to context
+      */
+      ctx.headers.set("x-user-id", userId)
+      return ctx
+    },
+  ],
+})
+
+const getProfile = createEndpoint(
+  "GET",
+  "/profile",
+  async (request, ctx) => {
+    const userId = ctx.headers.get("x-user-id")
+    return Response.json({ userId, name: "John" })
+  },
+  authConfig
+)
+```
+
+## Global Middlewares
+
+Applied to all endpoints in a router via `createRouter` config:
+
+## Middleware Chaining
+
+Multiple middlewares execute in order:
+
+```ts lineNumbers
+const config = createEndpointConfig({
+  middlewares: [
+    /*
+     1. First middleware - logging
+    */
+    async (request, ctx) => {
+      console.log("1. Logging request")
+      return ctx
+    },
+    /*
+      2. Second middleware - auth
+    */
+    async (request, ctx) => {
+      console.log("2. Checking auth")
+      const token = request.headers.get("authorization")
+      if (!token) throw new Error("Unauthorized")
+      return ctx
+    },
+    /*
+     3. Third middleware - add metadata
+    */
+    async (request, ctx) => {
+      console.log("3. Adding metadata")
+      ctx.headers.set("x-processed", "true")
+      return ctx
+    },
+  ],
+})
+```
+
+## Execution Order
+
+When both global and endpoint middlewares are defined:
+
+```
+1. Global middlewares (from createRouter)
+   ↓
+2. Endpoint middlewares (from createEndpointConfig)
+   ↓
+3. Route handler
+```
+
+### Example
+
+```ts lineNumbers
+import { createEndpoint, createEndpointConfig, createRouter } from "@aura-stack/router"
+
+const endpointConfig = createEndpointConfig({
+  middlewares: [
+    async (request, ctx) => {
+      console.log("2. Endpoint middleware")
+      return ctx
+    },
+  ],
+})
+
+const endpoint = createEndpoint(
+  "GET",
+  "/test",
+  async (request, ctx) => {
+    console.log("3. Handler")
+    return Response.json({ ok: true })
+  },
+  endpointConfig
+)
+
+const router = createRouter([endpoint], {
+  middlewares: [
+    async (request) => {
+      console.log("1. Global middleware")
+      return request
+    },
+  ],
+})
+```
+
+## See Also
+
+- [Validation](./validation)
+- [createEndpoint](./create-endpoint)
+- [createRouter](./create-router)

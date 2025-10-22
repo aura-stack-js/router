@@ -1,6 +1,6 @@
 import z from "zod"
 import { describe, expect, test } from "vitest"
-import { executeGlobalMiddlewares, executeMiddlewares } from "../src/middleware.js"
+import { executeGlobalMiddlewares, executeMiddlewares } from "../src/middlewares.js"
 import type { MiddlewareFunction, RequestContext } from "../src/types.js"
 
 describe("executeGlobalMiddlewares", () => {
