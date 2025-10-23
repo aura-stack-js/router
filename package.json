@@ -1,6 +1,6 @@
 {
   "name": "@aura-stack/router",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "A lightweight TypeScript library for building, managing, and validating API routes and endpoints in Node.js applications.",
   "scripts": {
