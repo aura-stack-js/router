@@ -9,6 +9,10 @@ Per-package version history is maintained inside each package’s own `CHANGELOG
 
 ## [Unreleased]
 
+### Added
+
+- Added support for Zod schemas to validate dynamic route parameters. Endpoint parameter schemas can be supplied via `createEndpoint` or `createEndpointConfig`; these schemas are used at runtime to validate and coerce parameters and provide stronger compile-time types via Zod inference. [#10](https://github.com/aura-stack-ts/router/pull/10)
+
 ---
 
 ## [0.2.0] - 2025-10-23
