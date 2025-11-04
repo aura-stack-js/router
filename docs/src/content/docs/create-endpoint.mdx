@@ -89,6 +89,26 @@ const getBookmark = createEndpoint("GET", "/users/:userId/books/:bookId", async 
 })
 ```
 
+With Zod schema (returns typed object)
+
+```ts lineNumbers
+import z from "zod"
+import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig("/users/:userId", {
+  schemas: {
+    params: z.object({
+      userId: z.coerce.number(),
+    }),
+  },
+})
+
+const getUser = createEndpoint("GET", "/users/:userId", async (request, ctx) => {
+  const { userId } = ctx.params
+  return Response.json({ id: userId })
+})
+```
+
 ### Search Parameters (`ctx.searchParams`)
 
 Query string parameters are available through `ctx.searchParams`:

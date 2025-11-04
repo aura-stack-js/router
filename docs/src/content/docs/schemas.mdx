@@ -13,6 +13,7 @@ Schema validation using Zod ensures type-safe request handling with automatic pa
 
 - Request bodies
 - Query parameters (search params)
+- Route Parameters
 
 When validation fails, an error is thrown automatically.
 
@@ -47,6 +48,9 @@ const searchUsers = createEndpoint(
 ### Advanced Query Validation
 
 ```ts lineNumbers
+import { createEndpointConfig } from "@aura-stack/router"
+import { z } from "zod"
+
 const advancedSearchConfig = createEndpointConfig({
   schemas: {
     searchParams: z.object({
@@ -66,6 +70,9 @@ const advancedSearchConfig = createEndpointConfig({
 ### Basic Body Validation
 
 ```ts lineNumbers
+import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
+import { z } from "zod"
+
 const createUserConfig = createEndpointConfig({
   schemas: {
     body: z.object({
@@ -90,6 +97,9 @@ const createUser = createEndpoint(
 ### Complex Body Validation
 
 ```ts lineNumbers
+import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
+import { z } from "zod"
+
 const updateProfileConfig = createEndpointConfig({
   schemas: {
     body: z.object({
@@ -119,11 +129,42 @@ const updateProfile = createEndpoint(
 )
 ```
 
+## Route Parameters
+
+### Basic Parameters Validation
+
+```ts lineNumbers
+import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
+import { z } from "zod"
+
+const dynamicsConfig = createEndpointConfig("/users/:userId/books/:bookId", {
+  schemas: {
+    params: z.object({
+      userId: z.regex(/^[0-9]+$/),
+      bookId: z.uuid(),
+    }),
+  },
+})
+
+const getBookById = createEndpoint(
+  "GET",
+  "/users/:userId/books/:bookId",
+  async (_, ctx) => {
+    const { userId, bookId } = ctx.params
+    return Response.json({ bookId })
+  },
+  dynamicsConfig
+)
+```
+
 ## Combined Validation
 
 Validate both body and query parameters in the same endpoint:
 
-```ts
+```ts lineNumbers
+import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
+import { z } from "zod"
+
 const createPostConfig = createEndpointConfig({
   schemas: {
     body: z.object({
@@ -165,7 +206,10 @@ const createPost = createEndpoint(
 
 Combine route params with validated schemas:
 
-```ts
+```ts lineNumbers
+import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
+import { z } from "zod"
+
 const updateUserConfig = createEndpointConfig("/users/:userId", {
   schemas: {
     body: z.object({
@@ -215,7 +259,9 @@ Validation errors are automatically thrown with descriptive messages:
 
 ### Custom Error Handling
 
-```ts
+```ts lineNumbers
+import { createRouter } from "@aura-stack/router"
+
 const { POST } = createRouter([createUser])
 
 async function handleRequest(request: Request) {
@@ -243,7 +289,7 @@ async function handleRequest(request: Request) {
 
 ### 1. Use Descriptive Schemas
 
-```ts
+```ts lineNumbers
 // ❌ Too loose
 z.string()
 
@@ -253,7 +299,10 @@ z.string().email().max(255)
 
 ### 2. Provide Default Values
 
-```ts
+```ts lineNumbers
+import { createEndpointConfig } from "@aura-stack/router"
+import { z } from "zod"
+
 const config = createEndpointConfig({
   schemas: {
     searchParams: z.object({
@@ -269,7 +318,9 @@ const config = createEndpointConfig({
 
 Query parameters are always strings, use coercion:
 
-```ts
+```ts lineNumbers
+import { z } from "zod"
+
 z.object({
   page: z.coerce.number(), // Converts "10" to 10
   active: z.coerce.boolean(), // Converts "true" to true
@@ -278,7 +329,10 @@ z.object({
 
 ### 4. Reuse Schemas
 
-```ts
+```ts lineNumbers
+import { createEndpointConfig } from "@aura-stack/router"
+import { z } from "zod"
+
 const userSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
