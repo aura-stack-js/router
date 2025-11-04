@@ -22,12 +22,12 @@ import type {
 
 ## Parameters
 
-| Parameter | Type                                                      | Description                                                        |
-| --------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
-| `method`  | `"GET"` \| `"POST"` \| `"PUT"` \| `"PATCH"` \| `"DELETE"` | HTTP method for the endpoint                                       |
-| `route`   | `RoutePattern`                                            | URL pattern with optional dynamic segments (e.g., `/users/:id`)    |
-| `handler` | `RouteHandler`                                            | Async function that processes the request and returns a `Response` |
-| `config`  | `EndpointConfig`                                          | Optional configuration for schemas and middlewares                 |
+| Parameter | Type                                                                                                             | Description                                                        |
+| --------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `method`  | `"GET"` \| `"POST"` \| `"PUT"` \| `"PATCH"` \| `"DELETE"` \| `"HEAD"` \| `"CONNECT"` \| `"OPTIONS"` \| `"TRACE"` | HTTP method for the endpoint                                       |
+| `route`   | `RoutePattern`                                                                                                   | URL pattern with optional dynamic segments (e.g., `/users/:id`)    |
+| `handler` | `RouteHandler`                                                                                                   | Async function that processes the request and returns a `Response` |
+| `config`  | `EndpointConfig`                                                                                                 | Optional configuration for schemas and middlewares                 |
 
 ## Basic Usage
 
@@ -44,7 +44,7 @@ const getSession = createEndpoint("GET", "/auth/session", async (request, ctx) =
 })
 ```
 
-> Only `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` methods are supported. Using other HTTP methods will result in TypeScript errors.
+> All standard HTTP methods are supported: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `CONNECT`, `OPTIONS`, and `TRACE`. See the [RFC standard](https://datatracker.ietf.org/doc/html/rfc2616) for details.
 
 ## Request Context
 
@@ -87,6 +87,31 @@ const getBookmark = createEndpoint("GET", "/users/:userId/books/:bookId", async 
   const { userId, bookId } = ctx.params // Both are typed as string
   return Response.json({ userId, bookId })
 })
+```
+
+With Zod schema (returns typed object)
+
+```ts lineNumbers
+import { z } from "zod"
+import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig("/users/:userId", {
+  schemas: {
+    params: z.object({
+      userId: z.coerce.number(),
+    }),
+  },
+})
+
+const getUser = createEndpoint(
+  "GET",
+  "/users/:userId",
+  async (request, ctx) => {
+    const { userId } = ctx.params
+    return Response.json({ id: userId })
+  },
+  config
+)
 ```
 
 ### Search Parameters (`ctx.searchParams`)

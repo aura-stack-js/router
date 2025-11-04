@@ -1,7 +1,7 @@
 import z from "zod"
 import { describe, test } from "vitest"
 import { createRouter } from "../src/router.js"
-import { createEndpoint, createRoutePattern } from "../src/endpoint.js"
+import { createEndpoint, createEndpointConfig, createRoutePattern } from "../src/endpoint.js"
 import type { HTTPMethod, RoutePattern } from "../src/types.js"
 
 describe("createRoutePattern", () => {
@@ -19,12 +19,12 @@ describe("createRoutePattern", () => {
         {
             description: "Converts route with one parameter to regex",
             route: "/users/:userId/books",
-            expected: /^\/users\/([^\\/]+)\/books$/,
+            expected: /^\/users\/([^\/]+)\/books$/,
         },
         {
             description: "Converts route with two parameters to regex",
             route: "/users/:userId/books/:bookId",
-            expected: /^\/users\/([^\\/]+)\/books\/([^\\/]+)$/,
+            expected: /^\/users\/([^\/]+)\/books\/([^\/]+)$/,
         },
     ]
     for (const { description, route, expected } of testCases) {
@@ -162,6 +162,7 @@ describe("createEndpoint", () => {
                     },
                 }
             )
+
             const { GET } = createRouter([endpoint])
 
             test("With valid searchParams", async ({ expect }) => {
@@ -177,6 +178,71 @@ describe("createEndpoint", () => {
                 expect(await get.json()).toEqual({ message: "Invalid search parameters" })
                 expect(get.status).toBe(422)
                 expect(get.statusText).toBe("UNPROCESSABLE_ENTITY")
+            })
+        })
+
+        describe("With params schema", () => {
+            const config = createEndpointConfig("/signIn/:oauth", {
+                schemas: {
+                    params: z.object({
+                        oauth: z.enum(["google", "github"]),
+                    }),
+                },
+            })
+
+            const inferConfig = createEndpointConfig("/type/:typeId", {
+                schemas: {
+                    params: z.object({
+                        typeId: z.enum(["token", "code"]),
+                    }),
+                },
+            })
+
+            const endpoint = createEndpoint(
+                "GET",
+                "/signIn/:oauth",
+                async (_, ctx) => {
+                    const oauth = ctx.params.oauth
+                    return Response.json({ oauth })
+                },
+                config
+            )
+
+            const inferEndpoint = createEndpoint(
+                "GET",
+                "/type/:typeId",
+                async (_, ctx) => {
+                    return Response.json({ typeId: ctx.params.typeId })
+                },
+                inferConfig
+            )
+
+            const { GET } = createRouter([endpoint, inferEndpoint])
+
+            test("With valid params", async ({ expect }) => {
+                const get = await GET(new Request("https://example.com/signIn/google"))
+                expect(get.ok).toBe(true)
+                expect(await get.json()).toEqual({ oauth: "google" })
+            })
+
+            test("With invalid params", async ({ expect }) => {
+                const get = await GET(new Request("https://example.com/signIn/facebook"))
+                expect(get.status).toBe(422)
+                expect(get.statusText).toBe("UNPROCESSABLE_ENTITY")
+                expect(await get.json()).toEqual({ message: "Invalid route parameters" })
+            })
+
+            test("With inferred params", async ({ expect }) => {
+                const get = await GET(new Request("https://example.com/type/token"))
+                expect(get.ok).toBe(true)
+                expect(await get.json()).toEqual({ typeId: "token" })
+            })
+
+            test("With invalid inferred params", async ({ expect }) => {
+                const get = await GET(new Request("https://example.com/type/invalid"))
+                expect(get.status).toBe(422)
+                expect(get.statusText).toBe("UNPROCESSABLE_ENTITY")
+                expect(await get.json()).toEqual({ message: "Invalid route parameters" })
             })
         })
     })

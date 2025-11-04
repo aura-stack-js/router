@@ -9,9 +9,10 @@ import { type ZodObject, z } from "zod"
 export type RoutePattern = `/${string}` | `/${string}/:${string}`
 
 /**
- * HTTP methods supported by the router.
+ * HTTP methods defined in HTTP/1.1 specification.
+ * @see https://datatracker.ietf.org/doc/html/rfc7231#section-4.3
  */
-export type HTTPMethod = "GET" | "POST" | "DELETE" | "PUT" | "PATCH"
+export type HTTPMethod = "GET" | "POST" | "DELETE" | "PUT" | "PATCH" | "OPTIONS" | "HEAD" | "TRACE" | "CONNECT"
 
 /**
  * Content types supported by the router.
@@ -37,15 +38,13 @@ export type Prettify<Obj extends object> = {
  * // Expected: {}
  * type NoParams = Params<"/about">;
  */
-export type Params<Route extends RoutePattern> = Route extends `/${string}/:${infer Param}/${infer Str}`
-    ? Prettify<{ [K in Param]: string } & Params<`/${Str}`>>
+export type GetRouteParams<Route extends RoutePattern> = Route extends `/${string}/:${infer Param}/${infer Str}`
+    ? Prettify<{ [K in Param]: string } & GetRouteParams<`/${Str}`>>
     : Route extends `/${string}/:${infer Param}`
       ? Prettify<{ [K in Param]: string }>
       : Route extends `/:${infer Param}`
         ? Prettify<{ [K in Param]: string }>
         : {}
-
-export type GetRouteParams<T extends RoutePattern> = Params<T>
 
 /**
  * Available schemas validation for an endpoint. It can include body and searchParams schemas.
@@ -53,6 +52,7 @@ export type GetRouteParams<T extends RoutePattern> = Params<T>
 export interface EndpointSchemas {
     body?: ZodObject<any>
     searchParams?: ZodObject<any>
+    params?: ZodObject<any>
 }
 
 /**
@@ -81,11 +81,20 @@ export type ContextBody<Schemas extends EndpointConfig["schemas"]> = Schemas ext
     : { body: undefined }
 
 /**
+ * Infer the type of route parameters from the provided value in the `EndpointConfig`.
+ */
+export type ContextParams<Schemas extends EndpointConfig["schemas"], Default = Record<string, string>> = Schemas extends {
+    params: ZodObject
+}
+    ? { params: z.infer<Schemas["params"]> }
+    : { params: Default }
+
+/**
  * Context object passed to route handlers and middlewares defined in the
  * `createEndpoint/createEndpointConfig` function or globally in the `createRouter` function.
  */
 export interface RequestContext<RouteParams = Record<string, string>, Config extends EndpointConfig = EndpointConfig> {
-    params: RouteParams
+    params: ContextParams<Config["schemas"], RouteParams>["params"]
     headers: Headers
     body: ContextBody<Config["schemas"]>["body"]
     searchParams: ContextSearchParams<Config["schemas"]>["searchParams"]

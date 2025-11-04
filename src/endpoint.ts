@@ -1,3 +1,4 @@
+import z from "zod/v4"
 import type { EndpointConfig, EndpointSchemas, HTTPMethod, RouteEndpoint, RouteHandler, RoutePattern } from "./types.js"
 import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js"
 import { AuraStackRouterError } from "./error.js"
@@ -60,10 +61,13 @@ export const createEndpoint = <
  * Create an endpoint configuration to be passed to the `createEndpoint` function.
  * This function is primarily for type inference and does not perform any runtime checks.
  *
- * @experimental
+ * This overload is recommended when the route pattern does not need to be specified explicitly,
+ * otherwise use the overload that accepts the route pattern as the first argument.
+ *
  * @param config - The endpoint configuration object
  * @returns The same configuration object, typed as EndpointConfig
  * @example
+ * // Without route pattern
  * const config = createEndpointConfig({
  *   middlewares: [myMiddleware],
  *   schemas: {
@@ -76,15 +80,25 @@ export const createEndpoint = <
  * const search = createEndpoint("GET", "/search", async (request, ctx) => {
  *   return new Response("Search results");
  * }, config);
+ *
+ * // Overload with route pattern
+ * const config = createEndpointConfig("/users/:userId", {
+ *   middlewares: [myMiddleware],
+ * })
+ *
+ * const getUser = createEndpoint("GET", "/users/:userId", async (request, ctx) => {
+ *   return new Response("User details");
+ * }, config);
  */
 export function createEndpointConfig<Schemas extends EndpointSchemas>(
     config: EndpointConfig<RoutePattern, Schemas>
 ): EndpointConfig<RoutePattern, Schemas>
 
-export function createEndpointConfig<Route extends RoutePattern, S extends EndpointSchemas>(
+export function createEndpointConfig<Route extends RoutePattern, Schemas extends EndpointSchemas>(
     route: Route,
-    config: EndpointConfig<Route, S>
-): EndpointConfig<Route, S>
+    config: EndpointConfig<Route, Schemas>
+): EndpointConfig<Route, Schemas>
+
 export function createEndpointConfig(...args: unknown[]) {
     if (typeof args[0] === "string") return args[1]
     return args[0]

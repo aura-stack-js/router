@@ -42,7 +42,7 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
                 if (endpoint) {
                     const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
                     const body = await getBody(globalRequest, endpoint.config)
-                    const params = getRouteParams(withBasePath as RoutePattern, pathname)
+                    const params = getRouteParams(withBasePath as RoutePattern, pathname, endpoint.config)
                     const searchParams = getSearchParams(globalRequest.url, endpoint.config)
                     const headers = getHeaders(globalRequest)
                     const context = {
