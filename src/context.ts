@@ -1,4 +1,4 @@
-import type { EndpointConfig, Params, RoutePattern, ContextSearchParams, ContentType } from "./types.js"
+import type { EndpointConfig, GetRouteParams, RoutePattern, ContextSearchParams, ContentType } from "./types.js"
 import { createRoutePattern } from "./endpoint.js"
 import { isSupportedBodyMethod } from "./assert.js"
 import { AuraStackRouterError } from "./error.js"
@@ -21,7 +21,7 @@ import { AuraStackRouterError } from "./error.js"
  * // Expected: { userId: "123", postId: "456" }
  * const params = getRouteParams(route, path);
  */
-export const getRouteParams = <Route extends RoutePattern>(route: Route, path: string): Params<Route> => {
+export const getRouteParams = <Route extends RoutePattern>(route: Route, path: string): GetRouteParams<Route> => {
     const routeRegex = createRoutePattern(route)
     if (!routeRegex.test(path)) {
         throw new AuraStackRouterError("BAD_REQUEST", `Missing required route params for route: ${route}`)
@@ -30,14 +30,14 @@ export const getRouteParams = <Route extends RoutePattern>(route: Route, path: s
         .exec(route)
         ?.slice(1)
         .map((seg) => seg.replace(":", ""))
-    if (!params) return {} as Params<Route>
+    if (!params) return {} as GetRouteParams<Route>
     const values = routeRegex.exec(path)?.slice(1)
     return params.reduce(
         (previous, now, idx) => ({
             ...previous,
             [now]: decodeURIComponent(values?.[idx] ?? ""),
         }),
-        {} as Params<Route>
+        {} as GetRouteParams<Route>
     )
 }
 

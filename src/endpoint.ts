@@ -1,6 +1,7 @@
-import type { EndpointConfig, EndpointSchemas, HTTPMethod, RouteEndpoint, RouteHandler, RoutePattern } from "./types.js"
+import type { EndpointConfig, EndpointSchemas, HTTPMethod, Prettify, RouteEndpoint, RouteHandler, RoutePattern } from "./types.js"
 import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js"
 import { AuraStackRouterError } from "./error.js"
+import z from "zod"
 
 /**
  * Create a RegExp pattern from a route string. This function allows segment the
@@ -60,10 +61,13 @@ export const createEndpoint = <
  * Create an endpoint configuration to be passed to the `createEndpoint` function.
  * This function is primarily for type inference and does not perform any runtime checks.
  *
- * @experimental
+ * This overload is recommended when the route pattern does not need to be specified explicitly,
+ * otherwise use the overload that accepts the route pattern as the first argument.
+ *
  * @param config - The endpoint configuration object
  * @returns The same configuration object, typed as EndpointConfig
  * @example
+ * // Without route pattern
  * const config = createEndpointConfig({
  *   middlewares: [myMiddleware],
  *   schemas: {
@@ -76,16 +80,47 @@ export const createEndpoint = <
  * const search = createEndpoint("GET", "/search", async (request, ctx) => {
  *   return new Response("Search results");
  * }, config);
+ *
+ * // Overload with route pattern
+ * const config = createEndpointConfig("/users/:userId", {
+ *   middlewares: [myMiddleware],
+ * })
+ *
+ * const getUser = createEndpoint("GET", "/users/:userId", async (request, ctx) => {
+ *   return new Response("User details");
+ * }, config);
  */
 export function createEndpointConfig<Schemas extends EndpointSchemas>(
     config: EndpointConfig<RoutePattern, Schemas>
 ): EndpointConfig<RoutePattern, Schemas>
 
-export function createEndpointConfig<Route extends RoutePattern, S extends EndpointSchemas>(
+export function createEndpointConfig<Route extends RoutePattern, Schemas extends EndpointSchemas>(
     route: Route,
-    config: EndpointConfig<Route, S>
-): EndpointConfig<Route, S>
+    config: EndpointConfig<Route, Schemas>
+): EndpointConfig<Route, Schemas>
+
 export function createEndpointConfig(...args: unknown[]) {
     if (typeof args[0] === "string") return args[1]
     return args[0]
+}
+
+/**
+ * Create a Zod literal schema for inferring specific string, number, or boolean values.
+ * It is useful for defining route parameters with a limited set of allowed values.
+ *
+ * @param infer - The specific value to infer (string, number, or boolean)
+ * @returns A Zod literal schema for the provided value
+ * @example
+ * const oauthSchema = createInfer<"google" | "github">();
+ *
+ * const config = createEndpointConfig("/signIn/:oauth", {
+ *   schemas: {
+ *     params: z.object({
+ *       oauth: oauthSchema
+ *     })
+ *   }
+ * });
+ */
+export const createInfer = <T extends string | number | boolean>(infer: T = <T>{}) => {
+    return z.literal(infer)
 }

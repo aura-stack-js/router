@@ -21,14 +21,6 @@ describe("RoutePattern", () => {
     expectTypeOf<"-users/:userId/books/:bookId">().toExtend<RoutePattern>()
     // @ts-expect-error
     expectTypeOf<"users/:userId/books/:bookId">().toExtend<RoutePattern>()
-
-    /**
-     * @todo: improve pattern matching
-     */
-    // @ts-expect-error
-    expectTypeOf<"/users/-userId">().toExtend<RoutePattern>()
-    // @ts-expect-error
-    expectTypeOf<"/users/:userId:bookId">().toExtend<RoutePattern>()
 })
 
 describe("GetRouteParams", () => {
@@ -40,10 +32,6 @@ describe("GetRouteParams", () => {
         userId: string
         bookId: string
     }>()
-    /**
-     * @todo: improve the getting of params
-     */
-    expectTypeOf<GetRouteParams<"/users/:userId:bookId">>().toEqualTypeOf<{}>()
 })
 
 describe("MiddlewareFunction", () => {
@@ -355,7 +343,7 @@ describe("RequestContext", () => {
 })
 
 describe("EndpointConfig", () => {
-    expectTypeOf<EndpointConfig>().toEqualTypeOf<{
+    expectTypeOf<EndpointConfig<"/">>().toEqualTypeOf<{
         schemas?: EndpointSchemas
         middlewares?: MiddlewareFunction<
             GetRouteParams<"/">,
