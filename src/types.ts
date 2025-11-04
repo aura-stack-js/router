@@ -159,15 +159,3 @@ export interface RouterConfig {
     basePath?: RoutePattern
     middlewares?: GlobalMiddleware[]
 }
-
-/**
- * Key type for enum values, can be string or number.
- */
-export type EnumKey = string | number
-
-/**
- * Converts a tuple of enum values into a readonly object mapping each value to itself.
- */
-export type ToEnum<Enum extends readonly EnumKey[]> = Readonly<{
-    [Key in Enum[number]]: Key
-}>
