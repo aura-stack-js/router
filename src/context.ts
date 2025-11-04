@@ -21,7 +21,11 @@ import { AuraStackRouterError } from "./error.js"
  * // Expected: { userId: "123", postId: "456" }
  * const params = getRouteParams(route, path);
  */
-export const getRouteParams = <Route extends RoutePattern>(route: Route, path: string): GetRouteParams<Route> => {
+export const getRouteParams = <Route extends RoutePattern, Config extends EndpointConfig>(
+    route: Route,
+    path: string,
+    config: Config = {} as Config
+) => {
     const routeRegex = createRoutePattern(route)
     if (!routeRegex.test(path)) {
         throw new AuraStackRouterError("BAD_REQUEST", `Missing required route params for route: ${route}`)
@@ -32,13 +36,21 @@ export const getRouteParams = <Route extends RoutePattern>(route: Route, path: s
         .map((seg) => seg.replace(":", ""))
     if (!params) return {} as GetRouteParams<Route>
     const values = routeRegex.exec(path)?.slice(1)
-    return params.reduce(
+    const dynamicParams = params.reduce(
         (previous, now, idx) => ({
             ...previous,
             [now]: decodeURIComponent(values?.[idx] ?? ""),
         }),
         {} as GetRouteParams<Route>
     )
+    if (config.schemas?.params) {
+        const parsed = config.schemas.params.safeParse(dynamicParams)
+        if (!parsed.success) {
+            throw new AuraStackRouterError("UNPROCESSABLE_ENTITY", "Invalid route parameters")
+        }
+        return parsed.data
+    }
+    return dynamicParams
 }
 
 /**

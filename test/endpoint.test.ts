@@ -1,7 +1,7 @@
 import z from "zod"
 import { describe, test } from "vitest"
 import { createRouter } from "../src/router.js"
-import { createEndpoint, createEndpointConfig, createInfer, createRoutePattern } from "../src/endpoint.js"
+import { createEndpoint, createEndpointConfig, createRoutePattern } from "../src/endpoint.js"
 import type { HTTPMethod, RoutePattern } from "../src/types.js"
 
 describe("createRoutePattern", () => {
@@ -162,6 +162,7 @@ describe("createEndpoint", () => {
                     },
                 }
             )
+
             const { GET } = createRouter([endpoint])
 
             test("With valid searchParams", async ({ expect }) => {
@@ -184,8 +185,15 @@ describe("createEndpoint", () => {
             const config = createEndpointConfig("/signIn/:oauth", {
                 schemas: {
                     params: z.object({
-                        //oauth: createInfer<"google" | "github">(),
                         oauth: z.enum(["google", "github"]),
+                    }),
+                },
+            })
+
+            const inferConfig = createEndpointConfig("/type/:typeId", {
+                schemas: {
+                    params: z.object({
+                        typeId: z.enum(["token", "code"]),
                     }),
                 },
             })
@@ -200,7 +208,16 @@ describe("createEndpoint", () => {
                 config
             )
 
-            const { GET } = createRouter([endpoint])
+            const inferEndpoint = createEndpoint(
+                "GET",
+                "/type/:typeId",
+                async (_, ctx) => {
+                    return Response.json({ typeId: ctx.params.typeId })
+                },
+                inferConfig
+            )
+
+            const { GET } = createRouter([endpoint, inferEndpoint])
 
             test("With valid params", async ({ expect }) => {
                 const get = await GET(new Request("https://example.com/signIn/google"))
@@ -208,11 +225,21 @@ describe("createEndpoint", () => {
                 expect(await get.json()).toEqual({ oauth: "google" })
             })
 
-            /**
-             * @todo: Fix type inference in params schema
-             */
             test("With invalid params", async ({ expect }) => {
                 const get = await GET(new Request("https://example.com/signIn/facebook"))
+                expect(get.status).toBe(422)
+                expect(get.statusText).toBe("UNPROCESSABLE_ENTITY")
+                expect(await get.json()).toEqual({ message: "Invalid route parameters" })
+            })
+
+            test("With inferred params", async ({ expect }) => {
+                const get = await GET(new Request("https://example.com/type/token"))
+                expect(get.ok).toBe(true)
+                expect(await get.json()).toEqual({ typeId: "token" })
+            })
+
+            test("With invalid inferred params", async ({ expect }) => {
+                const get = await GET(new Request("https://example.com/type/invalid"))
                 expect(get.status).toBe(422)
                 expect(get.statusText).toBe("UNPROCESSABLE_ENTITY")
                 expect(await get.json()).toEqual({ message: "Invalid route parameters" })

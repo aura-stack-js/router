@@ -1,7 +1,16 @@
-import type { EndpointConfig, EndpointSchemas, HTTPMethod, Prettify, RouteEndpoint, RouteHandler, RoutePattern } from "./types.js"
+import z from "zod/v4"
+import type {
+    EndpointConfig,
+    EndpointSchemas,
+    EnumKey,
+    HTTPMethod,
+    RouteEndpoint,
+    RouteHandler,
+    RoutePattern,
+    ToEnum,
+} from "./types.js"
 import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js"
 import { AuraStackRouterError } from "./error.js"
-import z from "zod"
 
 /**
  * Create a RegExp pattern from a route string. This function allows segment the
@@ -102,25 +111,4 @@ export function createEndpointConfig<Route extends RoutePattern, Schemas extends
 export function createEndpointConfig(...args: unknown[]) {
     if (typeof args[0] === "string") return args[1]
     return args[0]
-}
-
-/**
- * Create a Zod literal schema for inferring specific string, number, or boolean values.
- * It is useful for defining route parameters with a limited set of allowed values.
- *
- * @param infer - The specific value to infer (string, number, or boolean)
- * @returns A Zod literal schema for the provided value
- * @example
- * const oauthSchema = createInfer<"google" | "github">();
- *
- * const config = createEndpointConfig("/signIn/:oauth", {
- *   schemas: {
- *     params: z.object({
- *       oauth: oauthSchema
- *     })
- *   }
- * });
- */
-export const createInfer = <T extends string | number | boolean>(infer: T = <T>{}) => {
-    return z.literal(infer)
 }
