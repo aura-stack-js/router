@@ -3,6 +3,7 @@ import { createRoutePattern } from "./endpoint.js"
 import { getBody, getHeaders, getRouteParams, getSearchParams } from "./context.js"
 import { executeGlobalMiddlewares, executeMiddlewares } from "./middlewares.js"
 import { AuraStackRouterError } from "./error.js"
+import { isSupportedMethod } from "./assert.js"
 
 /**
  * Creates the entry point for the server, handling the endpoints defined in the router.
@@ -27,42 +28,61 @@ export const createRouter = <const Endpoints extends RouteEndpoint[]>(
     }
     for (const method of groups.keys()) {
         server[method as keyof typeof server] = async (request: Request) => {
-            try {
-                const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
-                if (globalRequest instanceof Response) {
-                    return globalRequest
-                }
-                const url = new URL(globalRequest.url)
-                const pathname = url.pathname
-                const endpoint = groups.get(method)?.find((endpoint) => {
-                    const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
-                    const regex = createRoutePattern(withBasePath as RoutePattern)
-                    return regex.test(pathname)
-                })
-                if (endpoint) {
-                    const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
-                    const body = await getBody(globalRequest, endpoint.config)
-                    const params = getRouteParams(withBasePath as RoutePattern, pathname, endpoint.config)
-                    const searchParams = getSearchParams(globalRequest.url, endpoint.config)
-                    const headers = getHeaders(globalRequest)
-                    const context = {
-                        params,
-                        searchParams,
-                        headers,
-                        body,
-                    } as RequestContext<Record<string, string>, typeof endpoint.config>
-                    await executeMiddlewares(globalRequest, context, endpoint.config.middlewares)
-                    return endpoint.handler(globalRequest, context)
-                }
-                return Response.json({ message: "Not Found" }, { status: 404 })
-            } catch (error) {
-                if (error instanceof AuraStackRouterError) {
-                    const { message, status, statusText } = error
-                    return Response.json({ message }, { status, statusText })
-                }
-                return Response.json({ message: "Internal Server Error" }, { status: 500 })
-            }
+            return await matchRoute(request, method, groups, config)
         }
     }
     return server
+}
+
+const matchRoute = async (
+    request: Request,
+    method: HTTPMethod,
+    groups: Map<HTTPMethod, RouteEndpoint[]>,
+    config: RouterConfig
+) => {
+    try {
+        if (!isSupportedMethod(request.method)) {
+            throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not supported`)
+        }
+        if (!groups.has(request.method)) {
+            throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not allowed`)
+        }
+        const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
+        if (globalRequest instanceof Response) {
+            return globalRequest
+        }
+        const url = new URL(globalRequest.url)
+        const pathname = url.pathname
+        const endpoint = groups.get(method)?.find((endpoint) => {
+            const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
+            const regex = createRoutePattern(withBasePath as RoutePattern)
+            return regex.test(pathname)
+        })
+        if (endpoint) {
+            if (globalRequest.method !== endpoint.method) {
+                throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
+            }
+            const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
+            const body = await getBody(globalRequest, endpoint.config)
+            const params = getRouteParams(withBasePath as RoutePattern, pathname, endpoint.config)
+            const searchParams = getSearchParams(globalRequest.url, endpoint.config)
+            const headers = getHeaders(globalRequest)
+            const context = {
+                params,
+                searchParams,
+                headers,
+                body,
+            } as RequestContext<Record<string, string>, typeof endpoint.config>
+            await executeMiddlewares(globalRequest, context, endpoint.config.middlewares)
+            const response = await endpoint.handler(globalRequest, context)
+            return response
+        }
+        throw new AuraStackRouterError("NOT_FOUND", "Not Found")
+    } catch (error) {
+        if (error instanceof AuraStackRouterError) {
+            const { message, status, statusText } = error
+            return Response.json({ message }, { status, statusText })
+        }
+        return Response.json({ message: "Internal Server Error" }, { status: 500, statusText: "Internal Server Error" })
+    }
 }

@@ -194,6 +194,16 @@ describe("createRouter", () => {
             expectTypeOf(router).not.toHaveProperty("POST")
             expectTypeOf(router).not.toHaveProperty("PUT")
         })
+
+        test("Unsupported HTTP method in route", async () => {
+            const get = createEndpoint("GET", "/session", async () => {
+                return Response.json({ message: "Get user session" }, { status: 200 })
+            })
+            const { GET } = createRouter([get])
+            const response = await GET(new Request("https://example.com/session", { method: "DELETE" }))
+            expect(response.status).toBe(405)
+            expect(await response.json()).toEqual({ message: "The HTTP method 'DELETE' is not allowed" })
+        })
     })
 
     describe("With base path", () => {

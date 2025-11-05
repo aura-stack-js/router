@@ -1,8 +1,10 @@
 import type { RouteHandler, HTTPMethod, RoutePattern } from "./types.js"
 
-const supportedMethods = new Set<HTTPMethod>(["GET", "POST", "DELETE", "PUT", "PATCH"])
+const supportedMethods = new Set<HTTPMethod>(["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS", "HEAD", "TRACE", "CONNECT"])
 
 const supportedBodyMethods = new Set<HTTPMethod>(["POST", "PUT", "PATCH"])
+
+export const supportedProtocols = new Set(["http:", "https:"])
 
 /**
  * Checks if the provided method is a supported HTTP method.
