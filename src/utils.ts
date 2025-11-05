@@ -14,7 +14,6 @@ export const unstable_sanitizer = (str: string): string => {
         .replace(/\/(\.\/|\/)+/g, "/")
         .replace(/\/\.\.\//g, "/")
         .replace(/\s*\/\s*/g, "/")
-    console.log("str: ", str, "\nDecoded URL:", decodedUrl, "\nURL: ", new URL(decodedUrl).toString())
     try {
         const url = new URL(decodedUrl)
         if (!supportedProtocols.has(url.protocol)) {
