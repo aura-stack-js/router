@@ -4,6 +4,8 @@ const supportedMethods = new Set<HTTPMethod>(["GET", "POST", "DELETE", "PUT", "P
 
 const supportedBodyMethods = new Set<HTTPMethod>(["POST", "PUT", "PATCH"])
 
+export const supportedProtocols = new Set(["http:", "https:"])
+
 /**
  * Checks if the provided method is a supported HTTP method.
  *
