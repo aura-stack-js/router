@@ -43,6 +43,7 @@ export const statusText = Object.keys(statusCode).reduce(
 /**
  * Defines the errors used in AuraStack Router. Includes HTTP status code and
  * status text.
+ * @deprecated Use RouterError instead
  */
 export class AuraStackRouterError extends Error {
     /**
@@ -67,8 +68,15 @@ export class AuraStackRouterError extends Error {
 
     constructor(type: StatusCode, message: string, name?: string) {
         super(message)
-        this.name = name ?? "AuraStackRouterError"
+        this.name = name ?? "RouterError"
         this.status = statusCode[type]
         this.statusText = statusText[type]
+    }
+}
+
+export class RouterError extends AuraStackRouterError {
+    constructor(type: StatusCode, message: string, name?: string) {
+        super(type, message, name)
+        this.name = name ?? "RouterError"
     }
 }

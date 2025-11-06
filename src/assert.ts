@@ -1,4 +1,4 @@
-import { AuraStackRouterError } from "./error.js"
+import { RouterError } from "./error.js"
 import type { RouteHandler, HTTPMethod, RoutePattern } from "./types.js"
 
 const supportedMethods = new Set<HTTPMethod>(["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS", "HEAD", "TRACE", "CONNECT"])
@@ -48,11 +48,11 @@ export const isValidHandler = (handler: unknown): handler is RouteHandler<any, a
 }
 
 /**
- * Asserts that the error is an instance of AuraStackRouterError. It is useful if you want
- * to check if the error thrown by the router is an AuraStackRouterError or by other sources.
+ * Asserts that the error is an instance of RouterError. It is useful if you want
+ * to check if the error thrown by the router is an RouterError or by other sources.
  *
  * @param error - The error to check
- * @returns True if the error is an instance of AuraStackRouterError, false otherwise.
+ * @returns True if the error is an instance of RouterError, false otherwise.
  * @example
  * import { isRouterError } from "aura-stack/router";
  *
@@ -60,10 +60,10 @@ export const isValidHandler = (handler: unknown): handler is RouteHandler<any, a
  *   // Some router operation that may throw an error
  * } catch (error) {
  *  if (isRouterError(error)) {
- *    // Handle AuraStackRouterError
+ *    // Handle RouterError
  *  }
  * }
  */
-export const isRouterError = (error: unknown): error is AuraStackRouterError => {
-    return error instanceof AuraStackRouterError
+export const isRouterError = (error: unknown): error is RouterError => {
+    return error instanceof RouterError
 }

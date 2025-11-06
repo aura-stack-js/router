@@ -1,5 +1,5 @@
 import { type ZodObject, z } from "zod"
-import { AuraStackRouterError } from "./error.js"
+import { RouterError } from "./error.js"
 
 /**
  * Route pattern must start with a slash and can contain parameters prefixed with a colon.
@@ -188,7 +188,7 @@ export interface RouterConfig {
     /**
      * Error handler function that runs when an error is thrown in a router handler or middleware.
      * It can be used to customize the default error response provided by the router. If is an internal
-     * error the error is from the `AuraStackRouterError` class, otherwise the error is a generic
+     * error the error is from the `RouterError` class, otherwise the error is a generic
      * `Error` instance which was caused by a handler or middleware, for how to distinguish them you can use
      * the `isRouterError` function from the `assert` module.
      *
@@ -203,5 +203,5 @@ export interface RouterConfig {
      *   return Response.json({ message: "Internal Server Error" }, { status: 500 })
      * }
      */
-    onError?: (error: Error | AuraStackRouterError, request: Request) => Response | Promise<Response>
+    onError?: (error: Error | RouterError, request: Request) => Response | Promise<Response>
 }

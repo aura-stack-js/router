@@ -3,7 +3,7 @@ import { describe, expect, expectTypeOf, test } from "vitest"
 import { createRouter } from "../src/router.js"
 import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
 import { isRouterError } from "../src/assert.js"
-import { AuraStackRouterError } from "../src/error.js"
+import { RouterError } from "../src/error.js"
 
 describe("createRouter", () => {
     describe("OAuth endpoints", () => {
@@ -303,7 +303,7 @@ describe("createRouter", () => {
         })
 
         const getUsers = createEndpoint("GET", "/user/:userId", async () => {
-            throw new AuraStackRouterError("BAD_REQUEST", "Invalid user ID")
+            throw new RouterError("BAD_REQUEST", "Invalid user ID")
         })
 
         test("Handle unexpected error with custom error handler", async () => {

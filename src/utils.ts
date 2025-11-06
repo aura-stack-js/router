@@ -1,5 +1,5 @@
 import { supportedProtocols } from "./assert.js"
-import { AuraStackRouterError } from "./error.js"
+import { RouterError } from "./error.js"
 
 /**
  * Sanitizes a given string by decoding URL-encoded characters, replacing multiple
@@ -17,7 +17,7 @@ export const unstable_sanitizer = (str: string): string => {
     try {
         const url = new URL(decodedUrl)
         if (!supportedProtocols.has(url.protocol)) {
-            throw new AuraStackRouterError("BAD_REQUEST", `The URL protocol '${url.protocol}' is not supported`)
+            throw new RouterError("BAD_REQUEST", `The URL protocol '${url.protocol}' is not supported`)
         }
         const segments = url.pathname
             .split("/")
@@ -30,7 +30,7 @@ export const unstable_sanitizer = (str: string): string => {
         url.hash = ""
         return url.toString()
     } catch {
-        throw new AuraStackRouterError("BAD_REQUEST", `The URL '${decodedUrl}' is not valid`)
+        throw new RouterError("BAD_REQUEST", `The URL '${decodedUrl}' is not valid`)
     }
 }
 

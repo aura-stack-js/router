@@ -2,7 +2,7 @@ import type { HTTPMethod, RequestContext, RouteEndpoint, RoutePattern, RouterCon
 import { createRoutePattern } from "./endpoint.js"
 import { getBody, getHeaders, getRouteParams, getSearchParams } from "./context.js"
 import { executeGlobalMiddlewares, executeMiddlewares } from "./middlewares.js"
-import { AuraStackRouterError, statusText } from "./error.js"
+import { RouterError, statusText } from "./error.js"
 import { isRouterError, isSupportedMethod } from "./assert.js"
 
 /**
@@ -42,10 +42,10 @@ const matchRoute = async (
 ) => {
     try {
         if (!isSupportedMethod(request.method)) {
-            throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not supported`)
+            throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not supported`)
         }
         if (!groups.has(request.method)) {
-            throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not allowed`)
+            throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not allowed`)
         }
         const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
         if (globalRequest instanceof Response) {
@@ -60,7 +60,7 @@ const matchRoute = async (
         })
         if (endpoint) {
             if (globalRequest.method !== endpoint.method) {
-                throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
+                throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
             }
             const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
             const body = await getBody(globalRequest, endpoint.config)
@@ -77,11 +77,11 @@ const matchRoute = async (
             const response = await endpoint.handler(globalRequest, context)
             return response
         }
-        throw new AuraStackRouterError("NOT_FOUND", "Not Found")
+        throw new RouterError("NOT_FOUND", "Not Found")
     } catch (error) {
         if (config.onError) {
             try {
-                const response = await config.onError(error as Error | AuraStackRouterError, request)
+                const response = await config.onError(error as Error | RouterError, request)
                 return response
             } catch {
                 return Response.json(

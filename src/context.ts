@@ -1,7 +1,7 @@
 import type { EndpointConfig, GetRouteParams, RoutePattern, ContextSearchParams, ContentType } from "./types.js"
 import { createRoutePattern } from "./endpoint.js"
 import { isSupportedBodyMethod } from "./assert.js"
-import { AuraStackRouterError } from "./error.js"
+import { RouterError } from "./error.js"
 
 /**
  * Extracts route parameters from a given path using the specified route pattern.
@@ -28,7 +28,7 @@ export const getRouteParams = <Route extends RoutePattern, Config extends Endpoi
 ) => {
     const routeRegex = createRoutePattern(route)
     if (!routeRegex.test(path)) {
-        throw new AuraStackRouterError("BAD_REQUEST", `Missing required route params for route: ${route}`)
+        throw new RouterError("BAD_REQUEST", `Missing required route params for route: ${route}`)
     }
     const params = routeRegex
         .exec(route)
@@ -46,7 +46,7 @@ export const getRouteParams = <Route extends RoutePattern, Config extends Endpoi
     if (config.schemas?.params) {
         const parsed = config.schemas.params.safeParse(dynamicParams)
         if (!parsed.success) {
-            throw new AuraStackRouterError("UNPROCESSABLE_ENTITY", "Invalid route parameters")
+            throw new RouterError("UNPROCESSABLE_ENTITY", "Invalid route parameters")
         }
         return parsed.data
     }
@@ -92,7 +92,7 @@ export const getSearchParams = <Config extends EndpointConfig>(
     if (config.schemas?.searchParams) {
         const parsed = config.schemas.searchParams.safeParse(Object.fromEntries(route.searchParams.entries()))
         if (!parsed.success) {
-            throw new AuraStackRouterError("UNPROCESSABLE_ENTITY", "Invalid search parameters")
+            throw new RouterError("UNPROCESSABLE_ENTITY", "Invalid search parameters")
         }
         return parsed.data
     }
@@ -139,7 +139,7 @@ export const getBody = async <Config extends EndpointConfig>(request: Request, c
         if (config.schemas?.body) {
             const parsed = config.schemas.body.safeParse(json)
             if (!parsed.success) {
-                throw new AuraStackRouterError("UNPROCESSABLE_ENTITY", "Invalid request body")
+                throw new RouterError("UNPROCESSABLE_ENTITY", "Invalid request body")
             }
             return parsed.data
         }
@@ -159,7 +159,7 @@ export const getBody = async <Config extends EndpointConfig>(request: Request, c
     }
     /**
      * @todo: Handle other content types
-     * throw new AuraStackRouterError("UNSUPPORTED_MEDIA_TYPE", `Unsupported Content-Type: ${contentType}`)
+     * throw new RouterError("UNSUPPORTED_MEDIA_TYPE", `Unsupported Content-Type: ${contentType}`)
      */
     return null
 }
