@@ -2,8 +2,8 @@ import type { HTTPMethod, RequestContext, RouteEndpoint, RoutePattern, RouterCon
 import { createRoutePattern } from "./endpoint.js"
 import { getBody, getHeaders, getRouteParams, getSearchParams } from "./context.js"
 import { executeGlobalMiddlewares, executeMiddlewares } from "./middlewares.js"
-import { AuraStackRouterError } from "./error.js"
-import { isSupportedMethod } from "./assert.js"
+import { RouterError, statusText } from "./error.js"
+import { isRouterError, isSupportedMethod } from "./assert.js"
 
 /**
  * Creates the entry point for the server, handling the endpoints defined in the router.
@@ -42,10 +42,10 @@ const matchRoute = async (
 ) => {
     try {
         if (!isSupportedMethod(request.method)) {
-            throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not supported`)
+            throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not supported`)
         }
         if (!groups.has(request.method)) {
-            throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not allowed`)
+            throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${request.method}' is not allowed`)
         }
         const globalRequest = await executeGlobalMiddlewares(request, config.middlewares)
         if (globalRequest instanceof Response) {
@@ -60,7 +60,7 @@ const matchRoute = async (
         })
         if (endpoint) {
             if (globalRequest.method !== endpoint.method) {
-                throw new AuraStackRouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
+                throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
             }
             const withBasePath = config.basePath ? `${config.basePath}${endpoint.route}` : endpoint.route
             const body = await getBody(globalRequest, endpoint.config)
@@ -77,12 +77,23 @@ const matchRoute = async (
             const response = await endpoint.handler(globalRequest, context)
             return response
         }
-        throw new AuraStackRouterError("NOT_FOUND", "Not Found")
+        throw new RouterError("NOT_FOUND", "Not Found")
     } catch (error) {
-        if (error instanceof AuraStackRouterError) {
+        if (config.onError) {
+            try {
+                const response = await config.onError(error as Error | RouterError, request)
+                return response
+            } catch {
+                return Response.json(
+                    { message: "A critical failure occurred during error handling" },
+                    { status: 500, statusText: statusText.INTERNAL_SERVER_ERROR }
+                )
+            }
+        }
+        if (isRouterError(error)) {
             const { message, status, statusText } = error
             return Response.json({ message }, { status, statusText })
         }
-        return Response.json({ message: "Internal Server Error" }, { status: 500, statusText: "Internal Server Error" })
+        return Response.json({ message: "Internal Server Error" }, { status: 500, statusText: statusText.INTERNAL_SERVER_ERROR })
     }
 }

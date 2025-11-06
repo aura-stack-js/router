@@ -1,7 +1,7 @@
 /**
  * The HTTP status codes used in AuraStack Router.
  */
-const statusCode = {
+export const statusCode = {
     OK: 200,
     CREATED: 201,
     ACCEPTED: 202,
@@ -28,28 +28,55 @@ const statusCode = {
     HTTP_VERSION_NOT_SUPPORTED: 505,
 }
 
+type StatusCode = keyof typeof statusCode
+
 /**
  * Reverse mapping of status codes to their corresponding status text.
  */
-const statusText = Object.entries(statusCode).reduce(
-    (previous, [status, code]) => {
-        return { ...previous, [code]: status as keyof typeof statusCode }
+export const statusText = Object.keys(statusCode).reduce(
+    (previous, status) => {
+        return { ...previous, [status]: status }
     },
-    {} as Record<number, keyof typeof statusCode>
+    {} as Record<StatusCode, StatusCode>
 )
 
 /**
  * Defines the errors used in AuraStack Router. Includes HTTP status code and
  * status text.
+ * @deprecated Use RouterError instead
  */
 export class AuraStackRouterError extends Error {
+    /**
+     * The HTTP status code associated with the error.
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
+     * @example
+     * NOT_FOUND: 404
+     * METHOD_NOT_ALLOWED: 405
+     * INTERNAL_SERVER_ERROR: 500
+     */
     public readonly status: number
-    public readonly statusText: keyof typeof statusCode
 
-    constructor(type: keyof typeof statusCode, message: string, name?: string) {
+    /**
+     * The HTTP status text associated with the status code of the error.
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
+     * @example
+     * NOT_FOUND: NOT_FOUND
+     * METHOD_NOT_ALLOWED: METHOD_NOT_ALLOWED
+     * INTERNAL_SERVER_ERROR: INTERNAL_SERVER_ERROR
+     */
+    public readonly statusText: StatusCode
+
+    constructor(type: StatusCode, message: string, name?: string) {
         super(message)
-        this.name = name ?? "AuraStackRouterError"
+        this.name = name ?? "RouterError"
         this.status = statusCode[type]
-        this.statusText = statusText[this.status]
+        this.statusText = statusText[type]
+    }
+}
+
+export class RouterError extends AuraStackRouterError {
+    constructor(type: StatusCode, message: string, name?: string) {
+        super(type, message, name)
+        this.name = name ?? "RouterError"
     }
 }

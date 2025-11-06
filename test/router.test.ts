@@ -2,6 +2,8 @@ import z from "zod"
 import { describe, expect, expectTypeOf, test } from "vitest"
 import { createRouter } from "../src/router.js"
 import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
+import { isRouterError } from "../src/assert.js"
+import { RouterError } from "../src/error.js"
 
 describe("createRouter", () => {
     describe("OAuth endpoints", () => {
@@ -292,6 +294,53 @@ describe("createRouter", () => {
                 expect(get.status).toBe(403)
                 expect(await get.json()).toEqual({ message: "Forbidden" })
             })
+        })
+    })
+
+    describe("Custom error handler", () => {
+        const session = createEndpoint("GET", "/session", async () => {
+            throw new Error("Unexpected error in GET /session")
+        })
+
+        const getUsers = createEndpoint("GET", "/user/:userId", async () => {
+            throw new RouterError("BAD_REQUEST", "Invalid user ID")
+        })
+
+        test("Handle unexpected error with custom error handler", async () => {
+            const { GET } = createRouter([session], {
+                onError(error) {
+                    return Response.json({ error: error.message }, { status: 500 })
+                },
+            })
+
+            const get = await GET(new Request("https://example.com/session", { method: "GET" }))
+            expect(get.status).toBe(500)
+            expect(await get.json()).toEqual({ error: "Unexpected error in GET /session" })
+        })
+
+        test("Handle internal error within error handler", async () => {
+            const { GET } = createRouter([session], {
+                onError() {
+                    throw new Error("Error within error handler")
+                },
+            })
+            const get = await GET(new Request("https://example.com/session", { method: "GET" }))
+            expect(get.status).toBe(500)
+            expect(await get.json()).toEqual({ message: "A critical failure occurred during error handling" })
+        })
+
+        test("Handle unexpected error with isRouterError", async () => {
+            const { GET } = createRouter([getUsers], {
+                onError(error) {
+                    if (isRouterError(error)) {
+                        return Response.json({ message: error.message }, { status: error.status })
+                    }
+                    return Response.json({ message: "Internal Server Error" }, { status: 500 })
+                },
+            })
+            const get = await GET(new Request("https://example.com/user/12", { method: "GET" }))
+            expect(get.status).toBe(400)
+            expect(await get.json()).toEqual({ message: "Invalid user ID" })
         })
     })
 })

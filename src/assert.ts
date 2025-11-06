@@ -1,3 +1,4 @@
+import { RouterError } from "./error.js"
 import type { RouteHandler, HTTPMethod, RoutePattern } from "./types.js"
 
 const supportedMethods = new Set<HTTPMethod>(["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS", "HEAD", "TRACE", "CONNECT"])
@@ -44,4 +45,25 @@ export const isValidRoute = (route: string): route is RoutePattern => {
  */
 export const isValidHandler = (handler: unknown): handler is RouteHandler<any, any> => {
     return typeof handler === "function"
+}
+
+/**
+ * Asserts that the error is an instance of RouterError. It is useful if you want
+ * to check if the error thrown by the router is an RouterError or by other sources.
+ *
+ * @param error - The error to check
+ * @returns True if the error is an instance of RouterError, false otherwise.
+ * @example
+ * import { isRouterError } from "aura-stack/router";
+ *
+ * try {
+ *   // Some router operation that may throw an error
+ * } catch (error) {
+ *  if (isRouterError(error)) {
+ *    // Handle RouterError
+ *  }
+ * }
+ */
+export const isRouterError = (error: unknown): error is RouterError => {
+    return error instanceof RouterError
 }
