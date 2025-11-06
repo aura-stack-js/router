@@ -18,7 +18,18 @@ export type HTTPMethod = "GET" | "POST" | "DELETE" | "PUT" | "PATCH" | "OPTIONS"
 /**
  * Content types supported by the router.
  */
-export type ContentType = "application/json" | "application/x-www-form-urlencoded" | "text/plain"
+export type ContentType =
+    | "application/json"
+    | "application/x-www-form-urlencoded"
+    | "text/plain"
+    | "multipart/form-data"
+    | "application/xml"
+    | "application/octet-stream"
+    | `text/${string}`
+    | `image/${string}`
+    | `video/${string}`
+    | `audio/${string}`
+    | "application/pdf"
 
 export type Prettify<Obj extends object> = {
     [Key in keyof Obj]: Obj[Key]

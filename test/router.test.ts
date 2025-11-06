@@ -138,14 +138,14 @@ describe("createRouter", () => {
 
         test("Credentials handler with missing content-type", async () => {
             const { POST } = router
-            const body = JSON.stringify({
+            const body = {
                 username: "John",
                 password: "secret",
-            })
+            }
             const post = await POST(
                 new Request("https://example.com/auth/credentials", {
                     method: "POST",
-                    body,
+                    body: JSON.stringify(body),
                 })
             )
             expect(post.status).toBe(200)
@@ -341,6 +341,49 @@ describe("createRouter", () => {
             const get = await GET(new Request("https://example.com/user/12", { method: "GET" }))
             expect(get.status).toBe(400)
             expect(await get.json()).toEqual({ message: "Invalid user ID" })
+        })
+    })
+
+    describe("Parsing context", async () => {
+        const getUser = createEndpoint(
+            "POST",
+            "/auth/credentials",
+            async (request, ctx) => {
+                /**
+                 * The body is not used in this example, but we ensure that the request will be cloned by the getBody function
+                 */
+                await request.json()
+                const { body } = ctx
+                return Response.json({ message: "Get user", body }, { status: 200 })
+            },
+            {
+                schemas: {
+                    body: z.object({
+                        username: z.string(),
+                        password: z.string(),
+                    }),
+                },
+            }
+        )
+
+        const router = createRouter([getUser])
+
+        test("Get body with different methods", async () => {
+            const { POST } = router
+            const request = await POST(
+                new Request("https://example.com/auth/credentials", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username: "John",
+                        password: "Doe",
+                    }),
+                })
+            )
+            expect(request.status).toBe(200)
+            expect(await request.json()).toEqual({ message: "Get user", body: { username: "John", password: "Doe" } })
         })
     })
 })
