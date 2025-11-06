@@ -131,11 +131,12 @@ export const getHeaders = (request: Request): Headers => {
  */
 export const getBody = async <Config extends EndpointConfig>(request: Request, config: Config) => {
     if (!isSupportedBodyMethod(request.method)) {
-        throw new RouterError("BAD_REQUEST", `HTTP method ${request.method} does not support a body`)
+        return null
     }
-    const contentType = request.headers.get("Content-Type") ?? ("" as ContentType)
+    const clone = request.clone()
+    const contentType = clone.headers.get("Content-Type") ?? ("" as ContentType)
     if (contentType.includes("application/json") || config.schemas?.body) {
-        const json = await request.json()
+        const json = await clone.json()
         if (config.schemas?.body) {
             const parsed = config.schemas.body.safeParse(json)
             if (!parsed.success) {
@@ -147,17 +148,18 @@ export const getBody = async <Config extends EndpointConfig>(request: Request, c
     }
     try {
         if (createContentTypeRegex(["application/x-www-form-urlencoded", "multipart/form-data"], contentType)) {
-            return await request.formData()
+            return await clone.formData()
         }
         if (createContentTypeRegex(["text/", "application/xml"], contentType)) {
-            return await request.text()
+            return await clone.text()
         }
         if (createContentTypeRegex(["application/octet-stream"], contentType)) {
-            return await request.arrayBuffer()
+            return await clone.arrayBuffer()
         }
         if (createContentTypeRegex(["image/", "video/", "audio/", "application/pdf"], contentType)) {
-            return await request.blob()
+            return await clone.blob()
         }
+        return null
     } catch {
         throw new RouterError("UNPROCESSABLE_ENTITY", "Invalid request body, the content-type does not match the body format")
     }
