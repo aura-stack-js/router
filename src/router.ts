@@ -3,7 +3,7 @@ import { createRoutePattern } from "./endpoint.js"
 import { getBody, getHeaders, getRouteParams, getSearchParams } from "./context.js"
 import { executeGlobalMiddlewares, executeMiddlewares } from "./middlewares.js"
 import { AuraStackRouterError, statusText } from "./error.js"
-import { isSupportedMethod } from "./assert.js"
+import { isRouterError, isSupportedMethod } from "./assert.js"
 
 /**
  * Creates the entry point for the server, handling the endpoints defined in the router.
@@ -90,7 +90,7 @@ const matchRoute = async (
                 )
             }
         }
-        if (error instanceof AuraStackRouterError) {
+        if (isRouterError(error)) {
             const { message, status, statusText } = error
             return Response.json({ message }, { status, statusText })
         }

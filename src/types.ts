@@ -190,14 +190,14 @@ export interface RouterConfig {
      * It can be used to customize the default error response provided by the router. If is an internal
      * error the error is from the `AuraStackRouterError` class, otherwise the error is a generic
      * `Error` instance which was caused by a handler or middleware, for how to distinguish them you can use
-     * the `isAuraStackRouterError` function from the `assert` module.
+     * the `isRouterError` function from the `assert` module.
      *
      * @param error - The error thrown in the router
      * @param request - The original request that caused the error
      * @returns A response to be sent back to the client
      * @example
      * onError: (error, request) => {
-     *   if(isAuraStackRouterError(error)) {
+     *   if(isRouterError(error)) {
      *     return Response.json({ message: error.message }, { status: error.statusCode })
      *   }
      *   return Response.json({ message: "Internal Server Error" }, { status: 500 })

@@ -2,7 +2,7 @@ import z from "zod"
 import { describe, expect, expectTypeOf, test } from "vitest"
 import { createRouter } from "../src/router.js"
 import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
-import { isAuraStackRouterError } from "../src/assert.js"
+import { isRouterError } from "../src/assert.js"
 import { AuraStackRouterError } from "../src/error.js"
 
 describe("createRouter", () => {
@@ -329,10 +329,10 @@ describe("createRouter", () => {
             expect(await get.json()).toEqual({ message: "A critical failure occurred during error handling" })
         })
 
-        test("Handle unexpected error with isAuraStackRouterError", async () => {
+        test("Handle unexpected error with isRouterError", async () => {
             const { GET } = createRouter([getUsers], {
                 onError(error) {
-                    if (isAuraStackRouterError(error)) {
+                    if (isRouterError(error)) {
                         return Response.json({ message: error.message }, { status: error.status })
                     }
                     return Response.json({ message: "Internal Server Error" }, { status: 500 })

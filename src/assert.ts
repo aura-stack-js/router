@@ -54,16 +54,16 @@ export const isValidHandler = (handler: unknown): handler is RouteHandler<any, a
  * @param error - The error to check
  * @returns True if the error is an instance of AuraStackRouterError, false otherwise.
  * @example
- * import { isAuraStackRouterError } from "aura-stack/router";
+ * import { isRouterError } from "aura-stack/router";
  *
  * try {
  *   // Some router operation that may throw an error
  * } catch (error) {
- *  if (isAuraStackRouterError(error)) {
+ *  if (isRouterError(error)) {
  *    // Handle AuraStackRouterError
  *  }
  * }
  */
-export const isAuraStackRouterError = (error: unknown): error is AuraStackRouterError => {
+export const isRouterError = (error: unknown): error is AuraStackRouterError => {
     return error instanceof AuraStackRouterError
 }
