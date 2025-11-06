@@ -511,6 +511,11 @@ describe("getHeaders", () => {
 
 describe("getBody", () => {
     describe("Valid body", () => {
+        const jsonBody = {
+            username: "John",
+            password: "secret",
+        }
+
         const testCases = [
             {
                 description: "Text body",
@@ -526,38 +531,42 @@ describe("getBody", () => {
                 description: "JSON body with content-type missing",
                 request: new Request("http://example.com/auth/credentials", {
                     method: "POST",
-                    body: JSON.stringify({
-                        username: "John",
-                        password: "secret",
-                    }),
+                    body: JSON.stringify(jsonBody),
                 }),
                 config: {},
-                expected: JSON.stringify({
-                    username: "John",
-                    password: "secret",
-                }),
+                expected: JSON.stringify(jsonBody),
             },
             {
                 description: "JSON body without schema",
                 request: new Request("http://example.com/auth/credentials", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        username: "John",
-                        password: "secret",
-                    }),
+                    body: JSON.stringify(jsonBody),
                 }),
                 config: {},
-                expected: {
-                    username: "John",
-                    password: "secret",
-                },
+                expected: jsonBody,
             },
             {
                 description: "JSON body with schema",
                 request: new Request("http://example.com/auth/credentials", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(jsonBody),
+                }),
+                config: {
+                    schemas: {
+                        body: z.object({
+                            username: z.string(),
+                            password: z.string(),
+                        }),
+                    },
+                },
+                expected: jsonBody,
+            },
+            {
+                description: "JSON body without content-type and with schema",
+                request: new Request("http://example.com/auth/credentials", {
+                    method: "POST",
                     body: JSON.stringify({
                         username: "John",
                         password: "secret",
@@ -571,7 +580,7 @@ describe("getBody", () => {
                         }),
                     },
                 },
-                expected: { username: "John", password: "secret" },
+                expected: jsonBody,
             },
         ]
 

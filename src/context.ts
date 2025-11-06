@@ -131,10 +131,10 @@ export const getHeaders = (request: Request): Headers => {
  */
 export const getBody = async <Config extends EndpointConfig>(request: Request, config: Config) => {
     if (!isSupportedBodyMethod(request.method)) {
-        return undefined
+        throw new RouterError("BAD_REQUEST", `HTTP method ${request.method} does not support a body`)
     }
     const contentType = request.headers.get("Content-Type") ?? ("" as ContentType)
-    if (contentType.includes("application/json")) {
+    if (contentType.includes("application/json") || config.schemas?.body) {
         const json = await request.json()
         if (config.schemas?.body) {
             const parsed = config.schemas.body.safeParse(json)
@@ -145,21 +145,25 @@ export const getBody = async <Config extends EndpointConfig>(request: Request, c
         }
         return json
     }
-    if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
-        return await request.formData()
+    try {
+        if (createContentTypeRegex(["application/x-www-form-urlencoded", "multipart/form-data"], contentType)) {
+            return await request.formData()
+        }
+        if (createContentTypeRegex(["text/", "application/xml"], contentType)) {
+            return await request.text()
+        }
+        if (createContentTypeRegex(["application/octet-stream"], contentType)) {
+            return await request.arrayBuffer()
+        }
+        if (createContentTypeRegex(["image/", "video/", "audio/", "application/pdf"], contentType)) {
+            return await request.blob()
+        }
+    } catch {
+        throw new RouterError("UNPROCESSABLE_ENTITY", "Invalid request body, the content-type does not match the body format")
     }
-    if (contentType.includes("text/")) {
-        return await request.text()
-    }
-    if (contentType.includes("application/octet-stream")) {
-        return await request.arrayBuffer()
-    }
-    if (contentType.includes("image/") || contentType.includes("video/") || contentType.includes("audio/")) {
-        return await request.blob()
-    }
-    /**
-     * @todo: Handle other content types
-     * throw new RouterError("UNSUPPORTED_MEDIA_TYPE", `Unsupported Content-Type: ${contentType}`)
-     */
-    return null
+}
+
+const createContentTypeRegex = (contentTypes: ContentType[], contenType: string): boolean => {
+    const regex = new RegExp(`${contentTypes.join("|")}`)
+    return regex.test(contenType)
 }
