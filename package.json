@@ -34,6 +34,11 @@
       "import": "./dist/endpoint.js",
       "require": "./dist/endpoint.cjs"
     },
+    "./error": {
+      "types": "./dist/error.d.ts",
+      "import": "./dist/error.js",
+      "require": "./dist/error.cjs"
+    },
     "./types": "./dist/types.d.ts"
   },
   "keywords": [

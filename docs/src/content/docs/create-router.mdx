@@ -34,6 +34,11 @@ interface RouterConfig {
     Global middlewares
   */
   middlewares?: MiddlewareFunction[]
+
+  /**
+    Error handler function that runs when an error is thrown in a router handler or middleware.
+  */
+  onError?: (error: Error | AuraStackRouterError, request: Request) => Response | Promise<Response>
 }
 ```
 
@@ -152,6 +157,45 @@ const corsMiddleware = async (request, ctx) => {
 
 const router = createRouter([...endpoints], {
   middlewares: [auditMiddleware, corsMiddleware],
+})
+```
+
+### Error handler
+
+The `onError` option accepts a handler that runs when an error is thrown inside the router, by endpoints, or by middlewares. Use the helper `isRouterError` to detect router-specific errors.
+
+The example below shows `onError` handling an error thrown by an endpoint:
+
+```ts lineNumbers
+import { createEndpoint } from "@aura-stack/router"
+
+const session = createEndpoint("GET", "/session", async () => {
+  throw new Error("Unexpected error in GET /session")
+})
+
+const { GET } = createRouter([session], {
+  onError(error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  },
+})
+```
+
+The example below shows how to handle an `AuraStackRouterError` thrown by an endpoint using the router's `onError` handler.
+
+```ts lineNumbers
+import { createEndpoint, isRouterError, AuraStackRouterError } from "@aura-stack/router"
+
+const getUsers = createEndpoint("GET", "/user/:userId", async () => {
+  throw new AuraStackRouterError("BAD_REQUEST", "Invalid user ID")
+})
+
+const { GET } = createRouter([getUsers], {
+  onError(error) {
+    if (isRouterError(error)) {
+      return Response.json({ message: error.message }, { status: error.status })
+    }
+    return Response.json({ message: "Internal Server Error" }, { status: 500 })
+  },
 })
 ```
 
