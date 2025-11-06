@@ -79,6 +79,17 @@ const matchRoute = async (
         }
         throw new AuraStackRouterError("NOT_FOUND", "Not Found")
     } catch (error) {
+        if (config.onError) {
+            try {
+                const response = await config.onError(error as Error | AuraStackRouterError, request)
+                return response
+            } catch {
+                return Response.json(
+                    { message: "A critical failure occurred during error handling" },
+                    { status: 500, statusText: "Internal Server Error" }
+                )
+            }
+        }
         if (error instanceof AuraStackRouterError) {
             const { message, status, statusText } = error
             return Response.json({ message }, { status, statusText })

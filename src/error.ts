@@ -1,7 +1,7 @@
 /**
  * The HTTP status codes used in AuraStack Router.
  */
-const statusCode = {
+export const statusCode = {
     OK: 200,
     CREATED: 201,
     ACCEPTED: 202,
@@ -31,7 +31,7 @@ const statusCode = {
 /**
  * Reverse mapping of status codes to their corresponding status text.
  */
-const statusText = Object.entries(statusCode).reduce(
+export const statusText = Object.entries(statusCode).reduce(
     (previous, [status, code]) => {
         return { ...previous, [code]: status as keyof typeof statusCode }
     },
@@ -43,7 +43,24 @@ const statusText = Object.entries(statusCode).reduce(
  * status text.
  */
 export class AuraStackRouterError extends Error {
+    /**
+     * The HTTP status code associated with the error.
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
+     * @example
+     * NOT_FOUND: 404
+     * METHOD_NOT_ALLOWED: 405
+     * INTERNAL_SERVER_ERROR: 500
+     */
     public readonly status: number
+
+    /**
+     * The HTTP status text associated with the status code of the error.
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
+     * @example
+     * 404: NOT_FOUND
+     * 405: METHOD_NOT_ALLOWED
+     * 500: INTERNAL_SERVER_ERROR
+     */
     public readonly statusText: keyof typeof statusCode
 
     constructor(type: keyof typeof statusCode, message: string, name?: string) {

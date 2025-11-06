@@ -48,10 +48,10 @@ const getSearchParams = (url: URL): URLSearchParams => {
 
 const sanitizeSegment = (str: string): string => {
     return str
-        .replace(/[<>:"'|?*&]/g, "") // elimina caracteres peligrosos
-        .replace(/%/g, "") // elimina restos de codificación parcial
-        .replace(/\s{2,}/g, " ") // normaliza espacios
-        .trim() // mantiene espacios válidos dentro
+        .replace(/[<>:"'|?*&]/g, "")
+        .replace(/%/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim()
 }
 
 const sanitizeQueryKey = (str: string): string => {

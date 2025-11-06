@@ -1,4 +1,5 @@
 import { type ZodObject, z } from "zod"
+import { AuraStackRouterError } from "./error.js"
 
 /**
  * Route pattern must start with a slash and can contain parameters prefixed with a colon.
@@ -156,6 +157,51 @@ export type GetHttpHandlers<Endpoints extends RouteEndpoint[]> = {
  * Configuration options for `createRouter` function.
  */
 export interface RouterConfig {
+    /**
+     * Prefix path for all routes/endpoints defined in the router.
+     *
+     * @example
+     * basePath: "/api/v1"
+     *
+     * // will match the "/users" endpoint.
+     * new Request("https://example.com/api/v1/users")
+     *
+     * // will NOT match the "/users" endpoint.
+     * new Request("https://example.com/users")
+     */
     basePath?: RoutePattern
+    /**
+     * Global middlewares that run before route matching for all endpoints in the router.
+     * You can use this to modify the request or return a response early.
+     *
+     * @example
+     * middlewares: [
+     *   async (request) => {
+     *     if(request.headers.get("Authorization")?.startsWith("Bearer ")) {
+     *       return Response.json({ message: "Unauthorized" }, { status: 401 })
+     *     }
+     *     return request
+     *   }
+     * ]
+     */
     middlewares?: GlobalMiddleware[]
+    /**
+     * Error handler function that runs when an error is thrown in a router handler or middleware.
+     * It can be used to customize the default error response provided by the router. If is an internal
+     * error the error is from the `AuraStackRouterError` class, otherwise the error is a generic
+     * `Error` instance which was caused by a handler or middleware, for how to distinguish them you can use
+     * the `isAuraStackRouterError` function from the `assert` module.
+     *
+     * @param error - The error thrown in the router
+     * @param request - The original request that caused the error
+     * @returns A response to be sent back to the client
+     * @example
+     * onError: (error, request) => {
+     *   if(isAuraStackRouterError(error)) {
+     *     return Response.json({ message: error.message }, { status: error.statusCode })
+     *   }
+     *   return Response.json({ message: "Internal Server Error" }, { status: 500 })
+     * }
+     */
+    onError?: (error: Error | AuraStackRouterError, request: Request) => Response | Promise<Response>
 }
