@@ -28,14 +28,16 @@ export const statusCode = {
     HTTP_VERSION_NOT_SUPPORTED: 505,
 }
 
+type StatusCode = keyof typeof statusCode
+
 /**
  * Reverse mapping of status codes to their corresponding status text.
  */
-export const statusText = Object.entries(statusCode).reduce(
-    (previous, [status, code]) => {
-        return { ...previous, [code]: status as keyof typeof statusCode }
+export const statusText = Object.keys(statusCode).reduce(
+    (previous, status) => {
+        return { ...previous, [status]: status }
     },
-    {} as Record<number, keyof typeof statusCode>
+    {} as Record<StatusCode, StatusCode>
 )
 
 /**
@@ -57,16 +59,16 @@ export class AuraStackRouterError extends Error {
      * The HTTP status text associated with the status code of the error.
      * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
      * @example
-     * 404: NOT_FOUND
-     * 405: METHOD_NOT_ALLOWED
-     * 500: INTERNAL_SERVER_ERROR
+     * NOT_FOUND: NOT_FOUND
+     * METHOD_NOT_ALLOWED: METHOD_NOT_ALLOWED
+     * INTERNAL_SERVER_ERROR: INTERNAL_SERVER_ERROR
      */
-    public readonly statusText: keyof typeof statusCode
+    public readonly statusText: StatusCode
 
-    constructor(type: keyof typeof statusCode, message: string, name?: string) {
+    constructor(type: StatusCode, message: string, name?: string) {
         super(message)
         this.name = name ?? "AuraStackRouterError"
         this.status = statusCode[type]
-        this.statusText = statusText[this.status]
+        this.statusText = statusText[type]
     }
 }

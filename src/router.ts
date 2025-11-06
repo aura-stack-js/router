@@ -2,7 +2,7 @@ import type { HTTPMethod, RequestContext, RouteEndpoint, RoutePattern, RouterCon
 import { createRoutePattern } from "./endpoint.js"
 import { getBody, getHeaders, getRouteParams, getSearchParams } from "./context.js"
 import { executeGlobalMiddlewares, executeMiddlewares } from "./middlewares.js"
-import { AuraStackRouterError } from "./error.js"
+import { AuraStackRouterError, statusText } from "./error.js"
 import { isSupportedMethod } from "./assert.js"
 
 /**
@@ -86,7 +86,7 @@ const matchRoute = async (
             } catch {
                 return Response.json(
                     { message: "A critical failure occurred during error handling" },
-                    { status: 500, statusText: "Internal Server Error" }
+                    { status: 500, statusText: statusText.INTERNAL_SERVER_ERROR }
                 )
             }
         }
@@ -94,6 +94,6 @@ const matchRoute = async (
             const { message, status, statusText } = error
             return Response.json({ message }, { status, statusText })
         }
-        return Response.json({ message: "Internal Server Error" }, { status: 500, statusText: "Internal Server Error" })
+        return Response.json({ message: "Internal Server Error" }, { status: 500, statusText: statusText.INTERNAL_SERVER_ERROR })
     }
 }
