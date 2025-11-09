@@ -102,7 +102,7 @@ describe("createRouter", () => {
             const get = await GET(new Request("https://example.com/auth/signin?redirect_uri=url_to_redirect", { method: "GET" }))
             expect(get.status).toBe(404)
             expect(get.ok).toBeFalsy()
-            expect(await get.json()).toEqual({ message: "Not Found" })
+            expect(await get.json()).toEqual({ message: "No route found for path: /auth/signin" })
         })
 
         test("Session handler with middleware", async () => {
@@ -232,7 +232,7 @@ describe("createRouter", () => {
             const get = await GET(new Request("https://example.com/session", { method: "GET" }))
             expect(get.status).toBe(404)
             expect(get.ok).toBeFalsy()
-            expect(await get.json()).toEqual({ message: "Not Found" })
+            expect(await get.json()).toEqual({ message: "No route found for path: /session" })
         })
     })
 

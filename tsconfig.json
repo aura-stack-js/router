@@ -17,6 +17,6 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["src", "test"],
+  "include": ["src", "test", "bench"],
   "exclude": ["node_modules", "dist"]
 }

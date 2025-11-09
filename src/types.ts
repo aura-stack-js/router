@@ -134,7 +134,7 @@ export type MiddlewareFunction<RouteParams = Record<string, string>, Config exte
 export type RouteHandler<Route extends RoutePattern, Config extends EndpointConfig> = (
     request: Request,
     ctx: Prettify<RequestContext<GetRouteParams<Route>, Config>>
-) => Promise<Response>
+) => Response | Promise<Response>
 
 /**
  * Represents a route endpoint definition, specifying the HTTP method, route pattern,
@@ -161,7 +161,7 @@ export type InferMethod<Endpoints extends RouteEndpoint[]> = Endpoints extends u
  * Each method is a function that takes a request and context, returning a promise of a response.
  */
 export type GetHttpHandlers<Endpoints extends RouteEndpoint[]> = {
-    [Method in InferMethod<Endpoints>]: (req: Request) => Promise<Response>
+    [Method in InferMethod<Endpoints>]: (req: Request) => Response | Promise<Response>
 }
 
 /**

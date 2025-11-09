@@ -1,39 +1,8 @@
 import z from "zod"
 import { describe, test } from "vitest"
 import { createRouter } from "../src/router.js"
-import { createEndpoint, createEndpointConfig, createRoutePattern } from "../src/endpoint.js"
+import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
 import type { HTTPMethod, RoutePattern } from "../src/types.js"
-
-describe("createRoutePattern", () => {
-    const testCases = [
-        {
-            description: "Converts route without parameters to regex",
-            route: "/about",
-            expected: /^\/about$/,
-        },
-        {
-            description: "Converts root route to regex",
-            route: "/",
-            expected: /^\/$/,
-        },
-        {
-            description: "Converts route with one parameter to regex",
-            route: "/users/:userId/books",
-            expected: /^\/users\/([^\/]+)\/books$/,
-        },
-        {
-            description: "Converts route with two parameters to regex",
-            route: "/users/:userId/books/:bookId",
-            expected: /^\/users\/([^\/]+)\/books\/([^\/]+)$/,
-        },
-    ]
-    for (const { description, route, expected } of testCases) {
-        test.concurrent(description, ({ expect }) => {
-            const regex = createRoutePattern(route as RoutePattern)
-            expect(regex).toEqual(expected)
-        })
-    }
-})
 
 describe("createEndpoint", () => {
     describe("With valid configuration", () => {

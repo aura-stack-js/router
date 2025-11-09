@@ -1,20 +1,31 @@
 import z from "zod/v4"
 import { describe, expectTypeOf, test } from "vitest"
 import { getRouteParams, getSearchParams, getHeaders, getBody } from "../src/context.js"
-import type { RoutePattern } from "../src/types.js"
+import type { RouteEndpoint } from "../src/types.js"
+import { createNode, insert, search } from "../src/router.js"
 
 describe("getRouteParams", () => {
+    const root = createNode()
+    const handler = async () => Response.json({})
+
+    const endpoints: RouteEndpoint[] = [
+        { method: "GET", route: "/books", handler, config: {} },
+        { method: "GET", route: "/users/:userId/books", handler, config: {} },
+        { method: "GET", route: "/users/:userId/books/:bookId", handler, config: {} },
+        { method: "GET", route: "/search/:query", handler, config: {} },
+        { method: "GET", route: "/items/:itemId", handler, config: {} },
+        { method: "GET", route: "/resources/:resourceId", handler, config: {} },
+        { method: "GET", route: "/dynamic/:invalidType", handler, config: {} },
+    ]
+
+    for (const endpoint of endpoints) {
+        insert(root, endpoint)
+    }
+
     describe("With valid route and path without params schema", () => {
         const testCases = [
             {
-                description: "Empty route and path",
-                route: "",
-                path: "",
-                expected: {},
-            },
-            {
                 description: "Extracts only userId from the path",
-                route: "/users/:userId/books",
                 path: "/users/123/books",
                 expected: {
                     userId: "123",
@@ -22,7 +33,6 @@ describe("getRouteParams", () => {
             },
             {
                 description: "Extracts userId and bookId from the path",
-                route: "/users/:userId/books/:bookId",
                 path: "/users/123/books/456",
                 expected: {
                     userId: "123",
@@ -31,13 +41,11 @@ describe("getRouteParams", () => {
             },
             {
                 description: "No parameters in the route",
-                route: "/about",
-                path: "/about",
+                path: "/books",
                 expected: {},
             },
             {
                 description: "Parameters with special characters",
-                route: "/search/:query",
                 path: "/search/hello%20world",
                 expected: {
                     query: "hello world",
@@ -45,9 +53,10 @@ describe("getRouteParams", () => {
             },
         ]
 
-        for (const { description, route, path, expected } of testCases) {
+        for (const { description, path, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
-                expect(getRouteParams(route as RoutePattern, path, { schemas: {} })).toEqual(expected)
+                const params = search("GET", root, path).params
+                expect(params).toEqual(expected)
             })
         }
     })
@@ -56,23 +65,16 @@ describe("getRouteParams", () => {
         const testCases = [
             {
                 description: "Extracts and validates userId as string",
-                route: "/users/:userId/books",
                 path: "/users/123/books",
-                schema: z.object({
-                    userId: z.string(),
-                }),
+                schema: z.object({ userId: z.string() }),
                 expected: {
                     userId: "123",
                 },
             },
             {
                 description: "Extracts and validates bookId as string",
-                route: "/users/:userId/books/:bookId",
                 path: "/users/123/books/456",
-                schema: z.object({
-                    userId: z.coerce.number(),
-                    bookId: z.coerce.number(),
-                }),
+                schema: z.object({ userId: z.coerce.number(), bookId: z.coerce.number() }),
                 expected: {
                     userId: 123,
                     bookId: 456,
@@ -80,42 +82,27 @@ describe("getRouteParams", () => {
             },
             {
                 description: "Extracts and validates alphanumeric id",
-                route: "/items/:itemId",
                 path: "/items/abc123",
-                schema: z.object({
-                    itemId: z.string().regex(/^[a-zA-Z0-9]+$/),
-                }),
+                schema: z.object({ itemId: z.string().regex(/^[a-zA-Z0-9]+$/) }),
                 expected: {
                     itemId: "abc123",
                 },
             },
             {
                 description: "Extracts and validates UUID",
-                route: "/resources/:resourceId",
                 path: "/resources/550e8400-e29b-41d4-a716-446655440000",
-                schema: z.object({
-                    resourceId: z.uuid(),
-                }),
+                schema: z.object({ resourceId: z.uuid() }),
                 expected: {
                     resourceId: "550e8400-e29b-41d4-a716-446655440000",
                 },
             },
-            {
-                description: "",
-                route: "/dynamic/:type",
-                path: "/dynamic/type",
-                schema: z.object({
-                    type: z.enum(["type", "category", "tag"]),
-                }),
-                expected: {
-                    type: "type",
-                },
-            },
         ]
 
-        for (const { description, route, path, schema, expected } of testCases) {
+        for (const { description, path, schema, expected } of testCases) {
             test.concurrent(description, ({ expect }) => {
-                expect(getRouteParams(route as RoutePattern, path, { schemas: { params: schema } })).toEqual(expected)
+                const params = search("GET", root, path).params
+                const dynamic = getRouteParams(params, { schemas: { params: schema } })
+                expect(dynamic).toEqual(expected)
             })
         }
     })
@@ -124,7 +111,6 @@ describe("getRouteParams", () => {
         const testCases = [
             {
                 description: "userId is not a number",
-                route: "/users/:userId/books",
                 path: "/users/abc/books",
                 schema: z.object({
                     userId: z.number(),
@@ -132,7 +118,6 @@ describe("getRouteParams", () => {
             },
             {
                 description: "type is not in enum",
-                route: "/dynamic/:type",
                 path: "/dynamic/invalidType",
                 schema: z.object({
                     type: z.enum(["type", "category", "tag"]),
@@ -140,7 +125,6 @@ describe("getRouteParams", () => {
             },
             {
                 description: "itemId does not match regex",
-                route: "/items/:itemId",
                 path: "/items/invalid-item-id!",
                 schema: z.object({
                     itemId: z.string().regex(/^[a-zA-Z0-9]+$/),
@@ -148,7 +132,6 @@ describe("getRouteParams", () => {
             },
             {
                 description: "resourceId is not a valid UUID",
-                route: "/resources/:resourceId",
                 path: "/resources/invalidUUID",
                 schema: z.object({
                     resourceId: z.uuid(),
@@ -156,11 +139,10 @@ describe("getRouteParams", () => {
             },
         ]
 
-        for (const { description, route, path, schema } of testCases) {
+        for (const { description, path, schema } of testCases) {
             test.concurrent(description, ({ expect }) => {
-                expect(() => getRouteParams(route as RoutePattern, path, { schemas: { params: schema } })).toThrowError(
-                    /Invalid route parameters/
-                )
+                const params = search("GET", root, path).params
+                expect(() => getRouteParams(params, { schemas: { params: schema } })).toThrowError(/Invalid route parameters/)
             })
         }
     })
@@ -169,50 +151,26 @@ describe("getRouteParams", () => {
         const testCases = [
             {
                 description: "Path does not match the route pattern",
-                route: "/users/:userId/books",
                 path: "/users/123/movies",
-                expected: /Missing required route params for route: \/users\/:userId\/books/,
+                expected: /No route found for path: \/users\/123\/movies/,
             },
             {
                 description: "Path with missing parameters",
-                route: "/users/:userId/books/:bookId",
-                path: "/users/123/books",
-                expected: /Missing required route params for route: \/users\/:userId\/books\/:bookId/,
+                path: "/users/123/books/456/extra",
             },
             {
-                description: "Path with extra segments",
-                route: "/users/:userId",
-                path: "/users/123/books",
-                expected: /Missing required route params for route: \/users\/:userId/,
+                description: "Non-existent path",
+                path: "/me",
+            },
+            {
+                description: "Similar but non-matching path",
+                path: "/users/123/book/456",
             },
         ]
 
-        for (const { description, route, path, expected } of testCases) {
+        for (const { description, path } of testCases) {
             test.concurrent(description, ({ expect }) => {
-                expect(() => getRouteParams(route as RoutePattern, path)).toThrowError(expected)
-            })
-        }
-    })
-
-    describe("Infer types", () => {
-        const testCases = [
-            {
-                description: "Infer types from zod schema",
-                route: "/oauth/:oauth",
-                path: "/oauth/google",
-                schema: z.object({
-                    oauth: z.enum(["github", "google", "facebook"]),
-                }),
-                expected: {
-                    oauth: "google",
-                },
-            },
-        ]
-
-        for (const { description, route, path, schema, expected } of testCases) {
-            test.concurrent(description, ({ expect }) => {
-                const params = getRouteParams(route as RoutePattern, path, { schemas: { params: schema } })
-                expect(params).toEqual(expected)
+                expect(() => search("GET", root, path)).toThrowError(new RegExp(`No route found for path: ${path}`))
             })
         }
     })

@@ -1,5 +1,4 @@
-import type { EndpointConfig, GetRouteParams, RoutePattern, ContextSearchParams, ContentType } from "./types.js"
-import { createRoutePattern } from "./endpoint.js"
+import type { EndpointConfig, ContextSearchParams, ContentType } from "./types.js"
 import { isSupportedBodyMethod } from "./assert.js"
 import { RouterError } from "./error.js"
 
@@ -21,36 +20,15 @@ import { RouterError } from "./error.js"
  * // Expected: { userId: "123", postId: "456" }
  * const params = getRouteParams(route, path);
  */
-export const getRouteParams = <Route extends RoutePattern, Config extends EndpointConfig>(
-    route: Route,
-    path: string,
-    config: Config = {} as Config
-) => {
-    const routeRegex = createRoutePattern(route)
-    if (!routeRegex.test(path)) {
-        throw new RouterError("BAD_REQUEST", `Missing required route params for route: ${route}`)
-    }
-    const params = routeRegex
-        .exec(route)
-        ?.slice(1)
-        .map((seg) => seg.replace(":", ""))
-    if (!params) return {} as GetRouteParams<Route>
-    const values = routeRegex.exec(path)?.slice(1)
-    const dynamicParams = params.reduce(
-        (previous, now, idx) => ({
-            ...previous,
-            [now]: decodeURIComponent(values?.[idx] ?? ""),
-        }),
-        {} as GetRouteParams<Route>
-    )
+export const getRouteParams = (params: Record<string, string>, config: EndpointConfig) => {
     if (config.schemas?.params) {
-        const parsed = config.schemas.params.safeParse(dynamicParams)
+        const parsed = config.schemas.params.safeParse(params)
         if (!parsed.success) {
             throw new RouterError("UNPROCESSABLE_ENTITY", "Invalid route parameters")
         }
         return parsed.data
     }
-    return dynamicParams
+    return params
 }
 
 /**
