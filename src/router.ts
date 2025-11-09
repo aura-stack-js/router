@@ -10,12 +10,12 @@ interface TrieNode {
     endpoints: Map<HTTPMethod, RouteEndpoint>
 }
 
-const createNode = (): TrieNode => ({
+export const createNode = (): TrieNode => ({
     statics: new Map(),
     endpoints: new Map(),
 })
 
-const insert = (root: TrieNode, endpoint: RouteEndpoint) => {
+export const insert = (root: TrieNode, endpoint: RouteEndpoint) => {
     if (!root || !endpoint) return
     let node = root
     const segments = endpoint.route === "/" ? [] : endpoint.route.split("/").filter(Boolean)
@@ -44,7 +44,7 @@ const insert = (root: TrieNode, endpoint: RouteEndpoint) => {
     node.endpoints.set(endpoint.method, endpoint)
 }
 
-const search = (root: TrieNode, pathname: string, method: HTTPMethod) => {
+export const search = (method: HTTPMethod, root: TrieNode, pathname: string) => {
     let node = root
     const params = {} as Record<string, string>
     const segments = pathname === "/" ? [] : pathname.split("/").filter(Boolean)
@@ -96,7 +96,7 @@ const handleRequest = async (method: HTTPMethod, request: Request, config: Route
         if (globalRequest.method !== method) {
             throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
         }
-        const { endpoint, params } = search(root, pathnameWithBase, method)
+        const { endpoint, params } = search(method, root, pathnameWithBase)
         if (endpoint.method !== globalRequest.method) {
             throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
         }
