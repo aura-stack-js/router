@@ -108,6 +108,9 @@ const handleRequest = async (method: HTTPMethod, request: Request, config: Route
             throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
         }
         const { endpoint, params } = search(root, pathnameWithBase, method)
+        if (endpoint.method !== globalRequest.method) {
+            throw new RouterError("METHOD_NOT_ALLOWED", `The HTTP method '${globalRequest.method}' is not allowed`)
+        }
         const dynamicParams = getDynamicParams(params, endpoint.config)
         const body = await getBody(globalRequest, endpoint.config)
         const searchParams = getSearchParams(globalRequest.url, endpoint.config)
@@ -126,7 +129,16 @@ const handleRequest = async (method: HTTPMethod, request: Request, config: Route
     }
 }
 
-export const unstable_create_router = <const Endpoints extends RouteEndpoint[]>(
+/**
+ * Creates the entry point for the server, handling the endpoints defined in the router.
+ * It groups endpoints by HTTP method and matches incoming requests to the appropriate endpoint.
+ * It accepts an optional configuration object to set a base path and middlewares for all endpoints.
+ *
+ * @param endpoints - Array of route endpoints to be handled by the router
+ * @param config - Optional configuration object for the router
+ * @returns An object with methods corresponding to HTTP methods, each handling requests for that method
+ */
+export const createRouter = <const Endpoints extends RouteEndpoint[]>(
     endpoints: Endpoints,
     config: RouterConfig = {}
 ): GetHttpHandlers<Endpoints> => {

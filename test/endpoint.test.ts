@@ -1,6 +1,6 @@
 import z from "zod"
 import { describe, test } from "vitest"
-import { createRouter } from "../src/router.js"
+import { createRouter } from "../src/unstable_router.js"
 import { createEndpoint, createEndpointConfig, createRoutePattern } from "../src/endpoint.js"
 import type { HTTPMethod, RoutePattern } from "../src/types.js"
 

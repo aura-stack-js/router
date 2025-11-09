@@ -2,7 +2,7 @@ import z from "zod"
 import { describe, bench } from "vitest"
 import type { EndpointConfig, RouteEndpoint, RoutePattern } from "../src/types.js"
 import { createRouter } from "../src/router.js"
-import { unstable_create_router } from "../src/unstable_router.js"
+import { createRouter as unstable_create_router } from "../src/unstable_router.js"
 import { createEndpoint } from "../src/endpoint.js"
 
 describe("router benchmark", () => {
