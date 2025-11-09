@@ -1,6 +1,6 @@
 import z from "zod"
 import { describe, expect, expectTypeOf, test } from "vitest"
-import { createRouter } from "../src/unstable_router.js"
+import { createRouter } from "../src/router.js"
 import { createEndpoint, createEndpointConfig } from "../src/endpoint.js"
 import { isRouterError } from "../src/assert.js"
 import { RouterError } from "../src/error.js"
@@ -102,7 +102,7 @@ describe("createRouter", () => {
             const get = await GET(new Request("https://example.com/auth/signin?redirect_uri=url_to_redirect", { method: "GET" }))
             expect(get.status).toBe(404)
             expect(get.ok).toBeFalsy()
-            expect(await get.json()).toEqual({ message: "Not Found" })
+            expect(await get.json()).toEqual({ message: "No route found for path: /auth/signin" })
         })
 
         test("Session handler with middleware", async () => {
@@ -232,7 +232,7 @@ describe("createRouter", () => {
             const get = await GET(new Request("https://example.com/session", { method: "GET" }))
             expect(get.status).toBe(404)
             expect(get.ok).toBeFalsy()
-            expect(await get.json()).toEqual({ message: "Not Found" })
+            expect(await get.json()).toEqual({ message: "No route found for path: /session" })
         })
     })
 

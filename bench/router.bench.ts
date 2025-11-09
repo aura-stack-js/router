@@ -2,7 +2,6 @@ import z from "zod"
 import { describe, bench } from "vitest"
 import type { EndpointConfig, RouteEndpoint, RoutePattern } from "../src/types.js"
 import { createRouter } from "../src/router.js"
-import { createRouter as unstable_create_router } from "../src/unstable_router.js"
 import { createEndpoint } from "../src/endpoint.js"
 
 describe("router benchmark", () => {
@@ -16,10 +15,6 @@ describe("router benchmark", () => {
     }))
     bench("build: createRouter (100 endpoints)", () => {
         createRouter(endpoints)
-    })
-
-    bench("build: unstable_create_router (100 endpoints)", () => {
-        unstable_create_router(endpoints)
     })
 })
 
@@ -40,15 +35,6 @@ describe("router benchmark making 100 requests", () => {
         await GET(new Request("https://example.com/not-found"))
         await GET(new Request("https://example.com/endpoint/500"))
     })
-
-    bench("match: unstable_create_router (100 endpoints) - small representative lookup set", async () => {
-        const { GET } = unstable_create_router(endpoints)
-        await GET(new Request("https://example.com/endpoint-42"))
-        await GET(new Request("https://example.com/endpoint-99"))
-        await GET(new Request("https://example.com/endpoint-1"))
-        await GET(new Request("https://example.com/not-found"))
-        await GET(new Request("https://example.com/endpoint/500"))
-    })
 })
 
 describe("router benchmark making 1000 requests", () => {
@@ -63,15 +49,6 @@ describe("router benchmark making 1000 requests", () => {
 
     bench("match: createRouter (1000 endpoints) - small representative lookup set", async () => {
         const { GET } = createRouter(endpoints)
-        await GET(new Request("https://example.com/endpoint-42"))
-        await GET(new Request("https://example.com/endpoint-99"))
-        await GET(new Request("https://example.com/endpoint-1"))
-        await GET(new Request("https://example.com/not-found"))
-        await GET(new Request("https://example.com/endpoint/500"))
-    })
-
-    bench("match: unstable_create_router (1000 endpoints) - small representative lookup set", async () => {
-        const { GET } = unstable_create_router(endpoints)
         await GET(new Request("https://example.com/endpoint-42"))
         await GET(new Request("https://example.com/endpoint-99"))
         await GET(new Request("https://example.com/endpoint-1"))
@@ -102,12 +79,6 @@ describe("router with dynamic routes without parsing benchmark", () => {
 
     bench("match: createRouter dynamic routes - 2 lookups (params only)", async () => {
         const { GET } = createRouter(endpoints)
-        await GET(new Request("https://example.com/users/123"))
-        await GET(new Request("https://example.com/posts/456/comments/789"))
-    })
-
-    bench("match: unstable_create_router dynamic routes - 2 lookups (params only)", async () => {
-        const { GET } = unstable_create_router(endpoints)
         await GET(new Request("https://example.com/users/123"))
         await GET(new Request("https://example.com/posts/456/comments/789"))
     })
@@ -152,12 +123,6 @@ describe("router with dynamic routes with parsing benchmark", () => {
         await GET(new Request("https://example.com/users/123"))
         await GET(new Request("https://example.com/posts/456/comments/789"))
     })
-
-    bench("match: unstable_create_router dynamic routes + schema validation - 2 lookups", async () => {
-        const { GET } = unstable_create_router(endpoints)
-        await GET(new Request("https://example.com/users/123"))
-        await GET(new Request("https://example.com/posts/456/comments/789"))
-    })
 })
 
 describe("router with body and without parsing benchmark", () => {
@@ -168,17 +133,6 @@ describe("router with body and without parsing benchmark", () => {
 
     bench("match+parse: createRouter POST JSON body - 1 request", async () => {
         const { POST } = createRouter([endpoints])
-        await POST(
-            new Request("https://example.com/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: "Test", value: 42 }),
-            })
-        )
-    })
-
-    bench("match+parse: unstable_create_router POST JSON body - 1 request", async () => {
-        const { POST } = unstable_create_router([endpoints])
         await POST(
             new Request("https://example.com/submit", {
                 method: "POST",
@@ -216,20 +170,8 @@ describe("router with body and parsing benchmark", () => {
             })
         )
     })
-
-    bench("match+parse: unstable_create_router POST JSON body with schema - 1 request", async () => {
-        const { POST } = unstable_create_router([endpoints])
-        await POST(
-            new Request("https://example.com/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: "Test", password: "1234" }),
-            })
-        )
-    })
 })
 
-// ----------------------
 describe("router with params and without parsing benchmark", () => {
     const endpoints = createEndpoint("GET", "/users/:id", async (_, ctx) => {
         const userId = ctx.params.id
@@ -238,15 +180,6 @@ describe("router with params and without parsing benchmark", () => {
 
     bench("match createRouter GET user by ID - 1 request", async () => {
         const { GET } = createRouter([endpoints])
-        await GET(
-            new Request("https://example.com/users/123", {
-                method: "GET",
-            })
-        )
-    })
-
-    bench("match unstable_create_router GET user by ID - 1 request", async () => {
-        const { GET } = unstable_create_router([endpoints])
         await GET(
             new Request("https://example.com/users/123", {
                 method: "GET",
@@ -273,15 +206,6 @@ describe("router with body and parsing benchmark", () => {
     )
     bench("match:parse createRouter GET user by ID - 1 request", async () => {
         const { GET } = createRouter([endpoints])
-        await GET(
-            new Request("https://example.com/users/123", {
-                method: "GET",
-            })
-        )
-    })
-
-    bench("match:parse unstable_create_router GET user by ID - 1 request", async () => {
-        const { GET } = unstable_create_router([endpoints])
         await GET(
             new Request("https://example.com/users/123", {
                 method: "GET",

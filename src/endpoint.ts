@@ -3,22 +3,6 @@ import { isSupportedMethod, isValidHandler, isValidRoute } from "./assert.js"
 import { RouterError } from "./error.js"
 
 /**
- * Create a RegExp pattern from a route string. This function allows segment the
- * dynamic params in the route. For example, the route `/users/:id` will be
- * converted to a regex pattern that captures the `id` parameter.
- *
- * @param route - The route pattern string
- * @returns A RegExp object that matches the route pattern
- * @example
- * // Expected: /^\/users\/([^/]+)$/
- * const pattern = createRoutePattern("/users/:id");
- */
-export const createRoutePattern = (route: RoutePattern): RegExp => {
-    const pattern = route.replace(/:[^/]+/g, "([^/]+)").replace(/\//g, "\\/")
-    return new RegExp(`^${pattern}$`)
-}
-
-/**
  * Defines an API endpoint for the router by specifying the HTTP method, route pattern,
  * handler function, and optional configuration such as validation schemas or middlewares.
  * Validates all parameters for correctness. The resulting endpoint should be passed

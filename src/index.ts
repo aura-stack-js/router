@@ -1,5 +1,5 @@
 export { createEndpoint, createEndpointConfig } from "./endpoint.js"
-export { createRouter } from "./unstable_router.js"
+export { createRouter } from "./router.js"
 export { isRouterError } from "./assert.js"
 export { RouterError, statusCode, statusText } from "./error.js"
 export type * from "./types.js"
