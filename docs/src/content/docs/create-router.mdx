@@ -5,47 +5,169 @@ description: Create routers to group endpoints and expose type-safe HTTP method 
 
 # `createRouter`
 
-Creates the main router that groups your endpoints and provides type-safe HTTP method handlers. The router automatically dispatches incoming requests to the correct endpoint based on the HTTP method and URL pattern.
+`createRouter` is a declarative function to define the main router that groups your endpoints and provides type-safe HTTP method handlers for the configured endpoints. The router automatically dispatches incoming requests to the correct endpoint based on the HTTP method and URL pattern.
 
-## Signature
+<Callout>
+  `createRouter` is a declarative function for defining endpoint in the backend supported like Next.js, Nuxt.js, SvelteKit and
+  more backends supports and currently is not designed to create backends from scratch (now now, but for the future yes)
+  adapters), however if you want to create a backend from scratch you can select backend defined library/frameworks like Express,
+  Nest.js or other options based on your likes
+</Callout>
 
 ```ts lineNumbers
-import type { RouteEndpoint, RouterConfig, GetHttpHandlers } from "@aura-stack/router/types"
+import { createRouter } from "@aura-stack/router"
 
-function createRouter<Endpoints extends RouteEndpoint[]>(endpoints: Endpoints, config?: RouterConfig): GetHttpHandlers<Endpoints>
+const getUsers = createEndpoint("GET", "/users", async (request, ctx) => {
+  return Response.json({ users: [] })
+})
+
+/*
+  - Defines the endpoints available for the router.
+  - All of the endpoints adds the `/api/v1` preffix.
+*/
+const router = createRouter([getUsers], {
+  basePath: "/api/v1",
+  middlewares: [],
+  onError: undefined,
+})
+
+/*
+  - HTTP handler based on the endpoint configured.
+  - For accessing users the request should direct to `/api/v1/users`
+*/
+export const { GET } = router
 ```
 
-## Parameters
+Through this api reference documentation you are going to learn and understand from basic to advanced about the `createRouter` API Reference:
+
+- [Good to know](#good-to-know)
+- [Type Inference](#type-inference)
+- [API Reference](#api-reference)
+  - [Parameters](#parameters)
+  - [RouterConfig](#router-config)
+  - [Returns](#returns)
+- [Usage](#usage)
+- [Route Matching](#route-matching)
+
+---
+
+## Good to know
+
+- All of the options of `createRouter` have a strong type-safe and type-inference to help users to configure directly to the arguments and options.
+- All of the configuration options are passed to all of the endpoint defined in the router. It allows have a global control to add extra layers of the endpoints before (`middlewares`) and after (`onError`) the execution of the route handlers of the endpoints
+- `createRouter` only returns the HTTP methods configured via `createEndpoint` function.
+- It internally implements a Trie to provide a better performace for the route matching, reducing the time spent for match the incoming requests.
+
+---
+
+## Type Inference
+
+All of the arguments, and options provided by `createRouter` declarative function can be passed directly or from dedicated interfaces and types for a better and organization in your routers.
+
+> The types can be acceded from the main entry point `/` or `/types`
+
+- `RouterConfig`: interface which provides the optional configurations supported by `createRouter`.
+- `RoutePattern`: type used by defined the `base` optional configuration.
+- `GlobalMiddleware`: type used to declare the `middleware` function.
+- `RouterConfig["onError"]`: type used to declare the `onError` function to catch and customize errors within the router.
+
+The router provides powerful type inference based on your defined endpoints. Only HTTP methods actually used in your endpoints are available:
+
+```ts lineNumbers
+import { createRouter, createEndpoint } from "@aura-stack/router"
+import type { RouterConfig, RoutePattern, GlobalMiddleware } from "@aura-stack/router/types"
+
+const signIn = createEndpoint("GET", "/auth/signIn/:oauth", async (request, ctx) => {
+  const { oauth } = ctx.params
+  return Response.json({ oauth })
+})
+
+const credentials = createEndpoint("POST", "/auth/credentials", async (request, ctx) => {
+  return Response.json({ token: "jwt-token" })
+})
+
+export const { GET, POST } = createRouter([signIn, credentials])
+
+// Type Error @errors: 2339
+export const { DELETE } = createRouter([signIn, credentials])
+```
+
+Optionally, you can set the optional configurations in a separated object and extending of the `RouterConfig` interface and passing the object to the router.
+
+```ts lineNumbers
+import { createRouter, type RouterConfig } from "@aura-stack/router"
+
+const routerConfig: RouterConfig = {
+  basePath: "/api/",
+  middlewares: [],
+  onError: undefined,
+}
+
+export const router = createRouter([], routerConfig)
+```
+
+---
+
+## Reference
+
+### Parameters
+
+Set of parameters accepted by the router to configure it.
 
 | Parameter   | Type              | Description                                                 |
 | ----------- | ----------------- | ----------------------------------------------------------- |
 | `endpoints` | `RouteEndpoint[]` | Array of endpoints created with `createEndpoint`            |
 | `config`    | `RouterConfig`    | Optional configuration for base path and global middlewares |
 
-### RouterConfig
+#### Endpoints `RouteEndpoint[]` [#endpoints]
 
-```ts lineNumbers
-interface RouterConfig {
-  /*
-    Prefix for all routes
-  */
-  basePath?: string
-  /*
-    Global middlewares
-  */
-  middlewares?: MiddlewareFunction[]
-
-  /**
-    Error handler function that runs when an error is thrown in a router handler or middleware.
-  */
-  onError?: (error: Error | RouterError, request: Request) => Response | Promise<Response>
-}
-```
-
-## Basic Usage
+List of endpoint definitions to be loaded and managed by the router. All of the HTTP methods defined in the router are returned as HTTP route handlers to be acceded based on your needs as mentioned in [Type Inference](#type-inference).
 
 ```ts lineNumbers
 import { createRouter, createEndpoint } from "@aura-stack/router"
+
+const signIn = createEndpoint("GET", "/auth/:oauth", async (request, ctx) => {
+  const oauth = ctx.oauth
+  return Response.json({ oauth })
+})
+
+const callback = createEndpoint("POST", "/callback/:oauth", async (request, ctx) => {
+  const oauth = ctx.oauth
+  return Response.json({ oauth }, { status: 301 })
+})
+
+export const { GET } = createRouter([signIn, callback])
+```
+
+#### RouterConfig `RouterConfig` [#router-config]
+
+For router configuration you can set extra options for a better customization and definitions based on your needs.
+
+| Option        | Type                                                                                | Description                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `basePath`    | `string`                                                                            | Prefix for all routes                                                                       |
+| `middlewares` | `MiddlewareFunction[]`                                                              | Global middlewares that runs before the route handler (endpoint defintion)                  |
+| `onError`     | ` (error: Error \| RouterError, request: Request) => Response \| Promise<Response>` | Error handler function that runs when an error is thrown in a router handler or middleware. |
+
+##### base `RoutePattern` [#base]
+
+`base` is an optional configuration option to add a preffix to all of the endpoint declared in the router. This is useful for API versioning or namespacing.
+
+<Callout>
+  The `basePath` is prepended to all endpoint routes. When making requests, include the full path including the base. We recommend
+  to set the based option that starts with an slash `/`. Additionally the option provides a type pattern to help you to set the
+  `/` to set the option.
+</Callout>
+
+```ts lineNumbers
+import { createRouter, type RouterConfig } from "@aura-stack/router"
+
+const routerConfig: RouterConfig = {
+  /**
+    Prefix to be added to all of the endpoints defined in the router.
+  */
+  basePath: "/api",
+}
 
 const getUsers = createEndpoint("GET", "/users", async (request, ctx) => {
   return Response.json({ users: [] })
@@ -55,53 +177,13 @@ const createUser = createEndpoint("POST", "/users", async (request, ctx) => {
   return Response.json({ id: "new-user" }, { status: 201 })
 })
 
-const router = createRouter([getUsers, createUser])
-
-// Use the router handlers
-const { GET, POST } = router
-```
-
-## Type Inference
-
-The router provides powerful type inference based on your defined endpoints. Only HTTP methods actually used in your endpoints are available:
-
-```ts lineNumbers
-import { createRouter, createEndpoint } from "@aura-stack/router"
-
-const oauth = createEndpoint("GET", "/auth/signin/:provider", async (request, ctx) => {
-  const { provider } = ctx.params
-  return Response.json({ provider })
-})
-
-const signIn = createEndpoint("POST", "/auth/credentials", async (request, ctx) => {
-  return Response.json({ token: "jwt-token" })
-})
-
-const { GET, POST } = createRouter([oauth, signIn])
-
-// @errors: 2339
-const { DELETE } = createRouter([oauth, signIn])
-```
-
-## Configuration Options
-
-### Base Path
-
-Add a prefix to all routes in the router. This is useful for API versioning or namespacing:
-
-```ts lineNumbers
-const router = createRouter([getUsers, createUser], {
-  basePath: "/api/v1",
-})
-
 /* 
   Routes become:
     - GET  /api/v1/users
     - POST /api/v1/users
 */
+export const { GET, POST } = createRouter([getUsers, createUser], routerConfig)
 ```
-
-> The `basePath` is prepended to all endpoint routes. When making requests, include the full path including the base.
 
 **Example with different base paths:**
 
@@ -128,16 +210,36 @@ const internalRouter = createRouter([...internalEndpoints], {
 })
 ```
 
-### Global Middlewares
+##### middlewares `MiddlewareFunction[]` [#middlewares]
+
+`middlewares` is an optional configuration option to add global function that runs before the route handler defintion and after the route matching. You can passed the middleware directly to the configuration options or via `GlobalMiddleware` type. You can use it for:
 
 Global middlewares run before any endpoint-specific middleware and the route handler. They're executed for every request that matches an endpoint:
 
+- Redirect to namespaces.
+
 ```ts lineNumbers
-import { createRouter, createEndpoint } from "@aura-stack/router"
+import { createRouter, type GlobalMiddleware } from "@aura-stack/router"
 
-const endpoints = [createEndpoint("GET", "/test", async () => Response.json({}))]
+const globalMiddleware: GlobalMiddleware = async (request) => {
+  const url = new URL(request.url)
+  if (url.pathname === "/api/v1") {
+    return Response.redirect("https://unstable.aura-stack.com", 302)
+  }
+  return request
+}
 
-const auditMiddleware = async (request, ctx) => {
+export const router = createRouter([], {
+  middlewares: [globalMiddleware],
+})
+```
+
+- Audit traffic
+
+```ts lineNumbers
+import { createRouter, type GlobalMiddleware } from "@aura-stack/router"
+
+const auditMiddleware: GlobalMiddleware = async (request, ctx) => {
   const timestamp = new Date().toISOString()
   console.log(`[${timestamp}] ${request.method} ${request.url}`)
 
@@ -145,61 +247,33 @@ const auditMiddleware = async (request, ctx) => {
     Add request ID to all responses
   */
   ctx.headers.set("x-request-id", crypto.randomUUID())
-
   return ctx
 }
 
-const corsMiddleware = async (request, ctx) => {
-  ctx.headers.set("Access-Control-Allow-Origin", "*")
-  ctx.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-  return ctx
+export const router = createRouter([], {
+  middlewares: [auditMiddleware],
+})
+```
+
+- Verify and check the coming request. Allows Early returns due to their runs before the route handlers. They can be powerful if the endpoints have a strong and heavy logic and the better option is returned before the route handler execution.
+
+```ts lineNumbers
+import { createRouter, type GlobalMiddleware } from "@aura-stack/router"
+
+const authorizationMiddleware: GlobalMiddleware = async (request) => {
+  const headers = new Headers(request.headers)
+  if (!headers.has("Authorization")) {
+    return Response.json({ message: "Unauthorized" }, { status: 401 })
+  }
+  return request
 }
 
-const router = createRouter([...endpoints], {
-  middlewares: [auditMiddleware, corsMiddleware],
+export const router = createRouter([], {
+  middlewares: [authorizationMiddleware],
 })
 ```
 
-### Error handler
-
-The `onError` option accepts a handler that runs when an error is thrown inside the router, by endpoints, or by middlewares. Use the helper `isRouterError` to detect router-specific errors.
-
-The example below shows `onError` handling an error thrown by an endpoint:
-
-```ts lineNumbers
-import { createEndpoint } from "@aura-stack/router"
-
-const session = createEndpoint("GET", "/session", async () => {
-  throw new Error("Unexpected error in GET /session")
-})
-
-const { GET } = createRouter([session], {
-  onError(error) {
-    return Response.json({ error: error.message }, { status: 500 })
-  },
-})
-```
-
-The example below shows how to handle an `RouterError` thrown by an endpoint using the router's `onError` handler.
-
-```ts lineNumbers
-import { createEndpoint, isRouterError, RouterError } from "@aura-stack/router"
-
-const getUsers = createEndpoint("GET", "/user/:userId", async () => {
-  throw new RouterError("BAD_REQUEST", "Invalid user ID")
-})
-
-const { GET } = createRouter([getUsers], {
-  onError(error) {
-    if (isRouterError(error)) {
-      return Response.json({ message: error.message }, { status: error.status })
-    }
-    return Response.json({ message: "Internal Server Error" }, { status: 500 })
-  },
-})
-```
-
-## Middleware Execution Order
+###### Middleware Execution Order
 
 Middlewares execute in a specific order:
 
@@ -239,22 +313,49 @@ const router = createRouter([endpoint], {
 })
 ```
 
-## Route Matching
+##### onError `RouterConfig["onError"]`
 
-The router matches requests using this priority:
+`onError` is a handler function that runs when an error is thrown in a route handler or middleware. It can be used to customize the default error response provided by the library.
 
-1. **Method matching** - Only endpoints with the correct HTTP method
-2. **Pattern matching** - Routes matched via regex patterns
-3. **First match wins** - Order matters for overlapping routes
+To Identify the errors if they were throw internally by the router or by a route handler you can use the `isRouterError` helper function which checks if the error is an instance of `RouterError` class which provides extra attributes like `statusCode`, `statusText` and message`
 
 ```ts lineNumbers
-/* 
- Specific routes before dynamic ones
-*/
-const router = createRouter([createEndpoint("GET", "/users/me", handler), createEndpoint("GET", "/users/:id", handler)])
+import { createRouter, isRouterError, type RouterConfig } from "@aura-stack/router"
+
+const onError: RouterConfig["onError"] = (error, request) => {
+  if (isRouterError(error)) {
+    const { message, statusText, statusCode } = error
+    return Response.json(
+      {
+        error: statusText,
+        error_description: message,
+      },
+      { status: statusCode }
+    )
+  }
+  return Response.json({ message: "Internal Server Error" }, { status: 500 })
+}
+
+export const router = createRouter([], {
+  onError,
+})
 ```
 
-## 404 Responses
+The example below shows `onError` handling an error thrown by an endpoint:
+
+```ts lineNumbers
+import { createEndpoint } from "@aura-stack/router"
+
+const session = createEndpoint("GET", "/session", async () => {
+  throw new Error("Unexpected error in GET /session")
+})
+
+const { GET } = createRouter([session], {
+  onError(error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  },
+})
+```
 
 When no endpoint matches, the router returns:
 
@@ -264,6 +365,75 @@ When no endpoint matches, the router returns:
 
 Customize 404 handling in your server layer if needed.
 
-## See Also
+---
 
-- [`createEndpoint`](./create-endpoint) - Define individual endpoints
+### Returns
+
+| Return        | Type                                                 | Description                                                               |
+| ------------- | ---------------------------------------------------- | ------------------------------------------------------------------------- |
+| http handlers | `GetHttpHandlers<Endpoints extends RouteEndpoint[]>` | Returns the HTTP handlers based on the HTTP methods defined in the router |
+
+#### HTTP Route Handlers
+
+The HTTP route handlers based on the HTTP methods defined in the router. It only returns the http methods configure and provides type-safe to avoid access to an undefined http handler.
+
+```ts lineNumbers
+import { createRouter, createEndpoint } from "@aura-stack/router"
+import type { RouterConfig, RoutePattern, GlobalMiddleware } from "@aura-stack/router/types"
+
+const signIn = createEndpoint("GET", "/auth/signIn/:oauth", async (request, ctx) => {
+  const { oauth } = ctx.params
+  return Response.json({ oauth })
+})
+
+const credentials = createEndpoint("POST", "/auth/credentials", async (request, ctx) => {
+  return Response.json({ token: "jwt-token" })
+})
+
+export const { GET, POST } = createRouter([signIn, credentials])
+
+// Type Error @errors: 2339
+export const { DELETE } = createRouter([signIn, credentials])
+```
+
+---
+
+## Usage
+
+```ts lineNumbers
+import { createRouter, createEndpoint } from "@aura-stack/router"
+
+const getUsers = createEndpoint("GET", "/users", async (request, ctx) => {
+  return Response.json({ users: [] })
+})
+
+const createUser = createEndpoint("POST", "/users", async (request, ctx) => {
+  return Response.json({ id: "new-user" }, { status: 201 })
+})
+
+const router = createRouter([getUsers, createUser])
+
+// Use the router handlers
+const { GET, POST } = router
+```
+
+## Route Matching
+
+Internally the `createRouter` implements a `Trie` data structure for the route matching to have a strong performace on the TypeScript-first functions.
+
+The router matches requests using this priority:
+
+1. Statis Routes: The static routes have a high priority than dynamic routes. It allows to access to static routes that could match with dynamic routes.
+
+> `/users/me` this static route have a priority than `/users/:userId` dynamic route.
+
+2. Dynamic Routes: the dynamic routes have a low priority than static routes, however the dynamic routes only accepts a unique param name, otherwise it returns an error. It is generated with intention based that the params context are provided based on the route.
+
+> `/users/:userId` and `/users/:userId/books` are valid routes, on the other hand. `/users/:userId` and `/users/:id` are invalid routes (It caused mismatching param name).
+
+```ts lineNumbers
+/* 
+ Specific routes before dynamic ones
+*/
+const router = createRouter([createEndpoint("GET", "/users/me", handler), createEndpoint("GET", "/users/:id", handler)])
+```

@@ -24,7 +24,7 @@ Install the package and its peer dependency:
 npm install @aura-stack/router zod
 ```
 
-> `zod` is a peer dependency required for schema validation features configured in `createEndpoint` declarative function.
+> `zod` is a peer dependency required for schema validation features configured in `createEndpoint` or `createEndpointConfig` declarative functions.
 
 ## Endpoints
 
@@ -49,7 +49,7 @@ const getUser = createEndpoint(
 
 ### Supported HTTP Methods
 
-Currently is supoprted five HTTP methods, based on the recommended and suggested HTTP methods to be used in an clean API Restful.
+The supported HTTP methods are the based and mentioned in the [HTTP/1.1](https://datatracker.ietf.org/doc/html/rfc2616#section-9) protocol and used for the creation of API Restful.
 
 - `GET` - Retrieve resources
 - `POST` - Create resources

@@ -3,11 +3,11 @@
   "description": "A modern, TypeScript-first router and endpoint definition library for Node.js",
   "root": true,
   "pages": [
-    "---Introduction---",
+    "---Getting Started---",
     "index",
     "schemas",
     "middlewares",
-    "---Core---",
+    "---API Reference---",
     "create-router",
     "create-endpoint",
     "create-endpoint-config"
