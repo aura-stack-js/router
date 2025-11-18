@@ -1,11 +1,11 @@
 ---
 title: createEndpointConfig
-description: Define configuration options for the endpoints adding schema validations and middleware.
+description: Declaratively define configuration options for an endpoint, including schema validation and middleware.
 ---
 
 # `createEndpointConfig`
 
-`createEndpointConfig` is a declarative API which allows to set the optional configurations for the endpoints defined by `createEndpoint` function.
+`createEndpointConfig` is a declarative API used to define the optional configuration for endpoints created with `createEndpoint`. It provides strong type inference for schemas, context, and middlewares.
 
 ```ts lineNumbers
 import { z } from "zod"
@@ -21,7 +21,7 @@ const config = createEndpointConfig({
 })
 ```
 
-> This function is primarily for type inference and does not perform any runtime checks.
+> This function improves type inference at build-time and does not perform any runtime validation.
 
 ## What you'll learn
 
@@ -34,16 +34,18 @@ Through this api reference documentation you are going to learn and understand f
   - [Overloads](#overloads)
 - [Usage examples](#usage)
 
+---
+
 ## Good to know
 
-- `createEndpointConfig` provides full type inference for context and middlewares
-- The functions provides two overloads for different usages.
-  - The basic overload is used when the endpoint don't use dynamic params
-  - The second overload address the type-inference for dynamic params
+- `createEndpointConfig` enables full type inference for the endpoint context, schemas, and middlewares.
+- The function provides two overloads:
+  - Overload 1: Pass only the configuration object — used when your endpoint does not rely on dynamic route params.
+  - Overload 2: Pass a route pattern first — used when you want typed dynamic params inside your middlewares.
 
 ## Type Inference
 
-The configuration options generated from `createEndpointConfig` provides a fully infer types than passing the options directly to `createEndpoint` function. You may still import the types if you prefer explicit definitions.
+Configurations created through `createEndpointConfig` provide more accurate type inference than passing the configuration inline to `createEndpoint`. However, you can still import the types manually if you want explicit definitions.
 
 > The types can be accessed from the main entry points `/` or `/types`. Available type
 
@@ -51,7 +53,7 @@ The configuration options generated from `createEndpointConfig` provides a fully
 - `EndpointConfig`
 - `EndpointSchemas`
 
-Example of infer context:
+Example: Inferred context with schemas
 
 ```ts lineNumbers
 import { z } from "zod"
@@ -74,7 +76,7 @@ const config = createEndpointConfig({
 })
 ```
 
-Explicit route for infer dynamic params:
+Example: Inferred dynamic params with explicit route
 
 ```ts lineNumbers
 import { z } from "zod"
@@ -98,11 +100,13 @@ const config = createEndpointConfig("/auth/signIn/:oauth/", {
 })
 ```
 
+---
+
 ## API Reference
 
 ### Parameters
 
-Set of parameters accepted by the endpont to configure it.
+Set of parameters accepted by `createEndpointConfig` to configure an endpoint.
 
 ```ts lineNumbers
 function createEndpointConfig<Schemas extends EndpointSchemas>(
@@ -115,14 +119,14 @@ function createEndpointConfig<Route extends RoutePattern, Schemas extends Endpoi
 ): EndpointConfig<Route, Schemas>
 ```
 
-| Parameter | Type              | Description                                                                     |
-| --------- | ----------------- | ------------------------------------------------------------------------------- |
-| `route`   | `RoutePattern`    | Optional option, route of the endpoint. It is required to infer dynamic params. |
-| `config`  | `EndpointSchemas` | Zod schemas for `params`, `searchParams` and `body`.                            |
+| Parameter | Type              | Description                                                                               |
+| --------- | ----------------- | ----------------------------------------------------------------------------------------- |
+| `route`   | `RoutePattern`    | Optional. Defines the route pattern and enables inference for dynamic route parameters.   |
+| `config`  | `EndpointSchemas` | Configuration object containing Zod schemas and middleware declarations for the endpoint. |
 
-#### route `RoutePattern` [#route]
+#### Route `RoutePattern` [#route]
 
-`route` is an optional configuration to set helps to the function to infer the dynamic parameters configured or required by the endpoint.
+`route` is an optional parameter used to provide the route pattern. Supplying a route pattern enables type inference for dynamic parameters declared in that route.
 
 ```ts lineNumbers
 import type { RoutePattern } from "@aura-stack/router/types"
@@ -131,10 +135,7 @@ import type { RoutePattern } from "@aura-stack/router/types"
 type Route = RoutePattern
 ```
 
-<Callout>
-  `route` is an optional configuration option and it be part of the second overload of the function which infer the dynamic
-  params.
-</Callout>
+<Callout>When a dynamic route pattern is provided, the function uses its segments to infer the shape of `ctx.params`.</Callout>
 
 ```ts lineNumbers
 import { createEndpointConfig } from "@aura-stack/router"
@@ -144,7 +145,7 @@ const config = createEndpointConfig("/auth/signIn/:oauth", {})
 
 #### config `EndpointSchemas` [#config-schemas]
 
-`config` is an optional configuration option to set the zod schemas used by `params`, `searchParams` and `body` contents. It is useful to add extra secure and validations to your endpoints.
+`config` allows you to define optional Zod schemas for request `params`, `searchParams`, and `body`, as well as middleware functions. Schemas are used to enhance type inference and to add optional runtime validation if you choose to implement it.
 
 ```ts lineNumbers
 import { z } from "zod"
@@ -159,11 +160,13 @@ const config = createEndpointConfig("/auth/signIn/:oauth", {
 })
 ```
 
+---
+
 ## Usage
 
 ### With `basic overload`
 
-The basic overload could be used when the endpoint doesn't define dynamic params.
+Use the basic overload when the endpoint does not define dynamic route parameters.
 
 ```ts lineNumbers
 import type { EndpointSchemas, EndpointConfig } from "@aura-stack/router/types"
@@ -172,6 +175,8 @@ function createEndpointConfig<Schemas extends EndpointSchemas>(
   config: EndpointConfig<RoutePattern, Schemas>
 ): EndpointConfig<RoutePattern, Schemas>
 ```
+
+Example:
 
 ```ts lineNumbers
 import { z } from "zod"
@@ -189,7 +194,7 @@ const config = createEndpointConfig({
 
 #### With `dynamic overload`
 
-This overload should be used when the endpoint consumes dynamic params and you want to have inference of the dynamic params.
+Use this overload when the endpoint includes dynamic route parameters and you want full type inference for `ctx.params`.
 
 ```ts lineNumbers
 import { z } from "zod"
