@@ -5,8 +5,10 @@
   "pages": [
     "---Getting Started---",
     "index",
-    "schemas",
+    "---Configuration---",
+    "zod-schemas",
     "middlewares",
+    "on-error",
     "---API Reference---",
     "create-router",
     "create-endpoint",

@@ -1,0 +1,131 @@
+---
+title: Catching Errors
+description: Customize error responses using the router's onError handler.
+---
+
+## Catching Errors
+
+`onError` is an error handler that catches all errors from route handlers, endpoint middlewares, global middlewares, and internal router logic. Use it to customize responses and add diagnostics.
+
+```ts lineNumbers
+import { createRouter, isRouterError, type RouterConfig } from "@aura-stack/router"
+
+const onErrorHandler: RouterConfig["onError"] = (error, request) => {
+  const message = isRouterError(error) ? "Unexpected Internal Error" : `The error was caused by ${error.message}`
+  return Response.json({ message })
+}
+```
+
+<Callout>
+  Internal router errors use the `RouterError` class. Use `isRouterError(error)` to detect and handle them specifically.
+</Callout>
+
+---
+
+## What you'll learn
+
+- [Good to know](#good-to-know)
+- [Type inference](#type-inference)
+- [Usage](#usage)
+  - [Basic usage](#basic-usage)
+  - [Using RouterConfig](#using-routerconfig-type)
+  - [Advanced usage](#advanced-usage)
+
+---
+
+## Good to know
+
+- All errors inside the router are caught by the `onError` handler. Common sources include:
+  - Global middlewares
+  - Endpoint middlewares
+  - Route handlers
+  - Internal errors (e.g., bad requests, configuration issues, validation mismatches)
+
+---
+
+## Type inference
+
+The `onError` handler receives an `error` of type `Error | RouterError`. Use `isRouterError` to narrow and access router‑specific fields like `status` and `statusText`.
+
+> `isRouterError` checks whether the error is an instance of `RouterError`.
+
+> Relevant type:
+
+- `RouterConfig`
+
+---
+
+## Usage
+
+### Basic Usage
+
+Pass an `onError` handler directly to `createRouter`.
+
+```ts lineNumbers
+import { createRouter } from "@aura-stack/router"
+
+export const router = createRouter([], {
+  onError: (error, request) => {
+    console.error("Router error:", error)
+    return Response.json({ message: "Internal Server Error" }, { status: 500 })
+  },
+})
+```
+
+### Using `RouterConfig` type
+
+Define the handler with `RouterConfig["onError"]` for clarity and reuse.
+
+```ts lineNumbers
+import { createRouter, type RouterConfig } from "@aura-stack/router"
+
+const onErrorHandler: RouterConfig["onError"] = (error, request) => {
+  console.error("Router error:", error)
+  return Response.json({ message: "Internal Server Error" }, { status: 500 })
+}
+
+export const router = createRouter([], {
+  onError: onErrorHandler,
+})
+```
+
+### Advanced Usage
+
+```ts lineNumbers
+import { createRouter, isRouterError, statusCode, type RouterConfig } from "@aura-stack/router"
+
+class LoginError extends Error {}
+
+interface ErrorResponse {
+  message: string
+  details: string
+  cause: string
+}
+
+const onErrorHandler: RouterConfig["onError"] = (error, request) => {
+  if (isRouterError(error)) {
+    const { message, name, stack, status, statusText } = error
+
+    const response: ErrorResponse = {
+      message,
+      cause: stack ?? "",
+      details: `The error was caused by ${name} in ${stack ?? "unknown"}`,
+    }
+
+    return Response.json(response, {
+      status,
+      statusText,
+    })
+  }
+  const response: ErrorResponse = {
+    message: error instanceof LoginError ? "The error was caused in 'Login Form'" : "Bad Request",
+    details: error.message,
+    cause: error.stack ?? "",
+  }
+  return Response.json(response, { status: statusCode.BAD_REQUEST })
+}
+
+export const router = createRouter([], {
+  onError: onErrorHandler,
+})
+```

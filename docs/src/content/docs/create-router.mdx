@@ -28,6 +28,8 @@ const router = createRouter([getUsers], {
 export const { GET } = router
 ```
 
+---
+
 ## What you'll learn
 
 Through this api reference documentation you are going to learn and understand from basic to advanced about the `createRouter` API Reference:
@@ -52,6 +54,8 @@ Through this api reference documentation you are going to learn and understand f
   - error handling
 - The router returns only the HTTP methods used in your endpoints.
 - Route matching is implemented with a Trie, providing excellent performance for large APIs.
+
+---
 
 ## Type Inference
 
@@ -120,7 +124,7 @@ type createRouter = <const Endpoints extends RouteEndpoint[]>(
 | `endpoints` | `RouteEndpoint[]` | The list of endpoints created via `createEndpoint` |
 | `config`    | `RouterConfig`    | Optional router configuration                      |
 
-#### endpoints `RouteEndpoint[]` [#endpoints]
+#### Endpoints `RouteEndpoint[]` [#endpoints]
 
 ```ts
 import type { HTTPMethod, RoutePattern, EndpointConfig, RouteHandler } from "@aura-stack/router/types"
@@ -155,7 +159,7 @@ const callback = createEndpoint("POST", "/callback/:oauth", async (request, ctx)
 export const { GET } = createRouter([signIn, callback])
 ```
 
-#### routerConfig `RouterConfig` [#router-config]
+#### RouterConfig `RouterConfig` [#router-config]
 
 For router configuration you can set extra options for a better customization and definitions based on your needs.
 

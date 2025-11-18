@@ -47,7 +47,7 @@ Through this api reference documentation you are going to learn and understand f
 
 - `createEndpoint` provides full type inference, including parameters, search params, request body, middleware output, and more — all derived from the endpoint definition.
 - Configuration options can be passed directly or through the declarative [`createEndpointConfig`](/docs/create-endpoint-config) function.
-- createEndpoint validates all arguments at definition time:
+- `createEndpoint` validates all arguments at definition time:
   - Ensures the HTTP method is valid; otherwise throws a `METHOD_NOT_ALLOWED` error.
   - Ensures the route pattern is valid; otherwise throws a `BAD_REQUEST` error.
   - Ensures a valid route handler is provided; otherwise throws a `BAD_REQUEST` error.
@@ -506,7 +506,7 @@ const createPost = createEndpoint(
 )
 ```
 
-#### config `EndpointConfig` [#endpoint-config]
+#### Config `EndpointConfig` [#endpoint-config]
 
 The `config` argument allows you to attach Zod schemas and middlewares to an endpoint.
 

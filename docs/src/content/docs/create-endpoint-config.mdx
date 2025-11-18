@@ -23,6 +23,8 @@ const config = createEndpointConfig({
 
 > This function improves type inference at build-time and does not perform any runtime validation.
 
+---
+
 ## What you'll learn
 
 Through this api reference documentation you are going to learn and understand from basic to advanced about the `createEndpointConfig` API Reference:
@@ -42,6 +44,8 @@ Through this api reference documentation you are going to learn and understand f
 - The function provides two overloads:
   - Overload 1: Pass only the configuration object — used when your endpoint does not rely on dynamic route params.
   - Overload 2: Pass a route pattern first — used when you want typed dynamic params inside your middlewares.
+
+---
 
 ## Type Inference
 
@@ -143,7 +147,7 @@ import { createEndpointConfig } from "@aura-stack/router"
 const config = createEndpointConfig("/auth/signIn/:oauth", {})
 ```
 
-#### config `EndpointSchemas` [#config-schemas]
+#### Config `EndpointSchemas` [#config-schemas]
 
 `config` allows you to define optional Zod schemas for request `params`, `searchParams`, and `body`, as well as middleware functions. Schemas are used to enhance type inference and to add optional runtime validation if you choose to implement it.
 
@@ -192,7 +196,7 @@ const config = createEndpointConfig({
 })
 ```
 
-#### With `dynamic overload`
+### With `dynamic overload`
 
 Use this overload when the endpoint includes dynamic route parameters and you want full type inference for `ctx.params`.
 
