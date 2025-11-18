@@ -14,7 +14,7 @@ description: Create routers to group endpoints and expose type-safe HTTP method 
 </Callout>
 
 ```ts lineNumbers
-import { createRouter } from "@aura-stack/router"
+import { createRouter, createEndpoint } from "@aura-stack/router"
 
 const getUsers = createEndpoint("GET", "/users", async (request, ctx) => {
   return Response.json({ users: [] })
@@ -68,7 +68,6 @@ Example of inferred handlers:
 
 ```ts lineNumbers
 import { createRouter, createEndpoint } from "@aura-stack/router"
-import type { RouterConfig, RoutePattern, GlobalMiddleware } from "@aura-stack/router/types"
 
 const signIn = createEndpoint("GET", "/auth/signIn/:oauth", async (request, ctx) => {
   const { oauth } = ctx.params
@@ -121,7 +120,7 @@ type createRouter = <const Endpoints extends RouteEndpoint[]>(
 | `endpoints` | `RouteEndpoint[]` | The list of endpoints created via `createEndpoint` |
 | `config`    | `RouterConfig`    | Optional router configuration                      |
 
-#### Endpoints `RouteEndpoint[]` [#endpoints]
+#### endpoints `RouteEndpoint[]` [#endpoints]
 
 ```ts
 import type { HTTPMethod, RoutePattern, EndpointConfig, RouteHandler } from "@aura-stack/router/types"
@@ -156,7 +155,7 @@ const callback = createEndpoint("POST", "/callback/:oauth", async (request, ctx)
 export const { GET } = createRouter([signIn, callback])
 ```
 
-#### RouterConfig `RouterConfig` [#router-config]
+#### routerConfig `RouterConfig` [#router-config]
 
 For router configuration you can set extra options for a better customization and definitions based on your needs.
 
@@ -511,7 +510,7 @@ export const { DELETE } = createRouter([signIn, credentials])
 
 ## Usage
 
-### Basic
+### Basic Usage
 
 ```ts lineNumbers
 import { createRouter, createEndpoint } from "@aura-stack/router"

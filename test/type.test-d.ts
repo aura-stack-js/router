@@ -375,10 +375,10 @@ describe("EndpointConfig", () => {
 
 describe("RouteHandler", () => {
     expectTypeOf<RouteHandler<"/auth/:oauth", {}>>().toEqualTypeOf<
-        (request: Request, ctx: RequestContext<GetRouteParams<"/auth/:oauth">, {}>) => Promise<Response>
+        (request: Request, ctx: RequestContext<GetRouteParams<"/auth/:oauth">, {}>) => Response | Promise<Response>
     >()
     expectTypeOf<RouteHandler<"/auth/session", {}>>().toEqualTypeOf<
-        (request: Request, ctx: RequestContext<GetRouteParams<"/auth/session">, {}>) => Promise<Response>
+        (request: Request, ctx: RequestContext<GetRouteParams<"/auth/session">, {}>) => Response | Promise<Response>
     >()
     expectTypeOf<
         RouteHandler<
@@ -400,7 +400,7 @@ describe("RouteHandler", () => {
                     }
                 }
             >
-        ) => Promise<Response>
+        ) => Response | Promise<Response>
     >()
 })
 
