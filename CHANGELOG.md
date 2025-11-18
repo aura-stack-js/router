@@ -9,9 +9,23 @@ Per-package version history is maintained inside each package’s own `CHANGELOG
 
 ## [Unreleased]
 
+---
+
+## [0.3.0] - 2025-11-18
+
 ### Added
 
+- Added `isRouterError`, which checks whether a given error is an instance of the internal `RouterError` class. Use it with the `onError` handler to differentiate router errors from generic errors. [#12](https://github.com/aura-stack-ts/router/pull/12).
+
+- Added `onError` handler in `createRouter` to customize error responses for failures that occur during router, endpoint, or middleware execution. [#12](https://github.com/aura-stack-ts/router/pull/12).
+
 - Added support for Zod schemas to validate dynamic route parameters. Endpoint parameter schemas can be supplied via `createEndpoint` or `createEndpointConfig`; these schemas are used at runtime to validate and coerce parameters and provide stronger compile-time types via Zod inference. [#10](https://github.com/aura-stack-ts/router/pull/10)
+
+### Changed
+
+- Updated request body handling by cloning the original request before parsing. This prevents the raw request stream from being consumed prematurely and allows reading the body multiple times within endpoint handlers. [#13](https://github.com/aura-stack-ts/router/pull/13).
+
+- Implemented a trie data structure to enhance route‑matching performance in the router. [#14](https://github.com/aura-stack-ts/router/pull/14).
 
 ---
 
