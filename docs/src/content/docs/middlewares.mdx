@@ -1,32 +1,53 @@
 ---
 title: Middlewares
-description: Global and endpoint middlewares for cross-cutting concerns like auth, logging, rate limiting, and more.
+description: Global and endpoint middlewares for auth, logging, CORS, rate limiting, and more.
 ---
 
 # Middlewares
 
-Middlewares are functions that execute before your route handlers, allowing you to add cross-cutting concerns like authentication, logging, and request modification.
+Middlewares run around your route handlers to add cross‑cutting behavior such as authentication, logging, CORS, and request/response shaping. There are two types:
 
-## Overview
+- [Global Middlewares](#global-middlewares): Applied to every request handled by a router.
+- [Endpoint Middlewares](#endpoint-middlewares): Defined per endpoint; run with typed request context.
 
-Middlewares in `@aura-stack/router` can be applied at two levels:
+---
 
-1. **Global** - Applied to all endpoints in a router
-2. **Endpoint-specific** - Applied to individual endpoints
+## What you'll learn
 
-## Middleware Function Signature
+- [Good to know](#good-to-know)
+- [Type inference](#type-inference)
+- [Middlewares](#middlewares)
+  - [Endpoint Middlewares](#endpoint-middlewares)
+  - [Global Middlewares](#global-middlewares)
+  - [Execution Order](#execution-order)
 
-```ts lineNumbers
-type MiddlewareFunction = (request: Request, ctx: RequestContext) => Promise<RequestContext>
-```
+---
 
-Middlewares receive the request and context, and must return the (possibly modified) context.
+## Good to know
 
-## Endpoint Middlewares
+- Middlewares let you verify, enrich, or modify the request/response around the handler.
+- Endpoint middlewares have full type inference for `params`, `searchParams`, and `body`.
+- Global middlewares run for all requests handled by a router and operate on the original `Request`.
 
-Applied to specific endpoints using `createEndpointConfig`:
+---
 
-### Basic Example
+## Type inference
+
+Endpoint middlewares are type‑safe based on the endpoint’s Zod schemas for `params`, `searchParams`, and `body`. These are inferred automatically from your endpoint configuration. For details, see [Zod Integration](/docs/concepts/zod).
+
+Global middlewares do not receive the typed context; they see the original `Request`.
+
+---
+
+## Middlewares
+
+### Endpoint Middlewares
+
+Use `createEndpointConfig` to declaratively attach middlewares and schemas to an endpoint.
+
+#### Basic Usage
+
+In the below example shows the basic usage of the `middlewares` and it doesn't provide usage of request context.
 
 ```ts lineNumbers
 import { createEndpointConfig, createEndpoint } from "@aura-stack/router"
@@ -44,9 +65,12 @@ const handler = async () => Response.json({})
 const endpoint = createEndpoint("GET", "/protected", handler, config)
 ```
 
-### Authentication Middleware
+#### Context Usage
+
+The context usage offers type-inference powerred by the [Zod Schemas](/docs/zod-schemas) which allows to add type-safe, validate and map the values, in the below example shows the usage of the endpoint middleware using context request.
 
 ```ts lineNumbers
+import { z } from "zod"
 import { createEndpoint, createEndpointConfig } from "@aura-stack/router"
 
 const verifyToken = (token: string) => {
@@ -88,11 +112,11 @@ const getProfile = createEndpoint(
 )
 ```
 
-## Global Middlewares
+### Global Middlewares
 
 Applied to all endpoints in a router via `createRouter` config:
 
-## Middleware Chaining
+#### Middleware Chaining
 
 Multiple middlewares execute in order:
 
@@ -127,7 +151,7 @@ const config = createEndpointConfig({
 })
 ```
 
-## Execution Order
+### Execution Order
 
 When both global and endpoint middlewares are defined:
 
@@ -139,7 +163,7 @@ When both global and endpoint middlewares are defined:
 3. Route handler
 ```
 
-### Example
+#### Example
 
 ```ts lineNumbers
 import { createEndpoint, createEndpointConfig, createRouter } from "@aura-stack/router"
@@ -172,9 +196,3 @@ const router = createRouter([endpoint], {
   ],
 })
 ```
-
-## See Also
-
-- [Validation](./validation)
-- [createEndpoint](./create-endpoint)
-- [createRouter](./create-router)

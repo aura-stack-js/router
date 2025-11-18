@@ -1,0 +1,216 @@
+---
+title: createEndpointConfig
+description: Declaratively define configuration options for an endpoint, including schema validation and middleware.
+---
+
+# `createEndpointConfig`
+
+`createEndpointConfig` is a declarative API used to define the optional configuration for endpoints created with `createEndpoint`. It provides strong type inference for schemas, context, and middlewares.
+
+```ts lineNumbers
+import { z } from "zod"
+import { createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig({
+  schemas: {
+    body: z.object({
+      username: z.string(),
+      password: z.string(),
+    }),
+  },
+})
+```
+
+> This function improves type inference at build-time and does not perform any runtime validation.
+
+---
+
+## What you'll learn
+
+Through this api reference documentation you are going to learn and understand from basic to advanced about the `createEndpointConfig` API Reference:
+
+- [Good to know](#good-to-know)
+- [Type inference](#type-inference)
+- [API Reference](#api-reference)
+  - [Parameters](#parameters)
+  - [Overloads](#overloads)
+- [Usage examples](#usage)
+
+---
+
+## Good to know
+
+- `createEndpointConfig` enables full type inference for the endpoint context, schemas, and middlewares.
+- The function provides two overloads:
+  - Overload 1: Pass only the configuration object — used when your endpoint does not rely on dynamic route params.
+  - Overload 2: Pass a route pattern first — used when you want typed dynamic params inside your middlewares.
+
+---
+
+## Type Inference
+
+Configurations created through `createEndpointConfig` provide more accurate type inference than passing the configuration inline to `createEndpoint`. However, you can still import the types manually if you want explicit definitions.
+
+> The types can be accessed from the main entry points `/` or `/types`. Available type
+
+- `RoutePattern`
+- `EndpointConfig`
+- `EndpointSchemas`
+
+Example: Inferred context with schemas
+
+```ts lineNumbers
+import { z } from "zod"
+import { createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig({
+  schemas: {
+    searchParams: z.object({
+      redirect_uri: z.string(),
+      code: z.string(),
+      state: z.string(),
+    }),
+  },
+  middlewares: [
+    async (request, ctx) => {
+      const { redirect_uri, code, state } = ctx.searchParams
+      return request
+    },
+  ],
+})
+```
+
+Example: Inferred dynamic params with explicit route
+
+```ts lineNumbers
+import { z } from "zod"
+import { createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig("/auth/signIn/:oauth/", {
+  schemas: {
+    searchParams: z.object({
+      redirect_uri: z.string(),
+      code: z.string(),
+      state: z.string(),
+    }),
+  },
+  middlewares: [
+    async (request, ctx) => {
+      const { oauth } = ctx.params
+      const { redirect_uri, code, state } = ctx.searchParams
+      return request
+    },
+  ],
+})
+```
+
+---
+
+## API Reference
+
+### Parameters
+
+Set of parameters accepted by `createEndpointConfig` to configure an endpoint.
+
+```ts lineNumbers
+function createEndpointConfig<Schemas extends EndpointSchemas>(
+  config: EndpointConfig<RoutePattern, Schemas>
+): EndpointConfig<RoutePattern, Schemas>
+
+function createEndpointConfig<Route extends RoutePattern, Schemas extends EndpointSchemas>(
+  route: Route,
+  config: EndpointConfig<Route, Schemas>
+): EndpointConfig<Route, Schemas>
+```
+
+| Parameter | Type              | Description                                                                               |
+| --------- | ----------------- | ----------------------------------------------------------------------------------------- |
+| `route`   | `RoutePattern`    | Optional. Defines the route pattern and enables inference for dynamic route parameters.   |
+| `config`  | `EndpointSchemas` | Configuration object containing Zod schemas and middleware declarations for the endpoint. |
+
+#### Route `RoutePattern` [#route]
+
+`route` is an optional parameter used to provide the route pattern. Supplying a route pattern enables type inference for dynamic parameters declared in that route.
+
+```ts lineNumbers
+import type { RoutePattern } from "@aura-stack/router/types"
+
+// Expected: `/${string}`
+type Route = RoutePattern
+```
+
+<Callout>When a dynamic route pattern is provided, the function uses its segments to infer the shape of `ctx.params`.</Callout>
+
+```ts lineNumbers
+import { createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig("/auth/signIn/:oauth", {})
+```
+
+#### Config `EndpointSchemas` [#config-schemas]
+
+`config` allows you to define optional Zod schemas for request `params`, `searchParams`, and `body`, as well as middleware functions. Schemas are used to enhance type inference and to add optional runtime validation if you choose to implement it.
+
+```ts lineNumbers
+import { z } from "zod"
+import { createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig("/auth/signIn/:oauth", {
+  schemas: {
+    params: z.object({
+      oauth: z.enum(["github", "google"]),
+    }),
+  },
+})
+```
+
+---
+
+## Usage
+
+### With `basic overload`
+
+Use the basic overload when the endpoint does not define dynamic route parameters.
+
+```ts lineNumbers
+import type { EndpointSchemas, EndpointConfig } from "@aura-stack/router/types"
+
+function createEndpointConfig<Schemas extends EndpointSchemas>(
+  config: EndpointConfig<RoutePattern, Schemas>
+): EndpointConfig<RoutePattern, Schemas>
+```
+
+Example:
+
+```ts lineNumbers
+import { z } from "zod"
+import { createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig({
+  schemas: {
+    body: z.object({
+      username: z.string(),
+      password: z.string(),
+    }),
+  },
+})
+```
+
+### With `dynamic overload`
+
+Use this overload when the endpoint includes dynamic route parameters and you want full type inference for `ctx.params`.
+
+```ts lineNumbers
+import { z } from "zod"
+import { createEndpointConfig } from "@aura-stack/router"
+
+const config = createEndpointConfig("/auth/signIn/:oauth/", {
+  schemas: {
+    searchParams: z.object({
+      redirect_uri: z.string(),
+      code: z.string(),
+      state: z.string(),
+    }),
+  },
+})
+```
